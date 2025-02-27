@@ -5,6 +5,7 @@ using Server.DAL.Contexts;
 using Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
+using Server.Hubs;
 
 namespace Server;
 
@@ -36,6 +37,7 @@ public class Program
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
+    app.MapHub<RoomHub>("/api/ws/rooms");
     app.Run();
   }
 
@@ -47,6 +49,7 @@ public class Program
 
   private static void RegisterServices(WebApplicationBuilder builder)
   {
+    builder.Services.AddSignalR();
     builder.Services.AddControllers();
     builder.Services.AddDbContext<MainDbContext>(options =>
         options.UseNpgsql(builder.Configuration[ConfigurationProgram.ConnectionString]));
