@@ -5,11 +5,11 @@ namespace Server.Hubs;
 
 public class RoomHub : Hub
 {
-    private readonly RoomSingletonService _roomSingletonService;
+    private readonly RoomManager _roomManager;
     
-    public RoomHub(RoomSingletonService roomSingletonService)
+    public RoomHub(RoomManager roomManager)
     {
-        _roomSingletonService = roomSingletonService;
+        _roomManager = roomManager;
     }
 
     public virtual async Task JoinGroup(string roomName)

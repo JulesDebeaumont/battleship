@@ -11,4 +11,6 @@ public class MainDbContext : IdentityDbContext<User, Role, long>
     {
         base.OnModelCreating(builder);
     }
+    
+    public DbSet<Room> Rooms { get; set; }
 }

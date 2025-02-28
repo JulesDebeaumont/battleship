@@ -5,6 +5,7 @@ using Server.DAL.Contexts;
 using Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
+using Server.DAL.Repositories;
 using Server.Hubs;
 
 namespace Server;
@@ -55,6 +56,9 @@ public class Program
         options.UseNpgsql(builder.Configuration[ConfigurationProgram.ConnectionString]));
     builder.Services.AddTransient<AuthService>();
     builder.Services.AddTransient<NoyauSihService>();
+    builder.Services.AddScoped<RoomRepository>();
+    builder.Services.AddScoped<MoveRepository>();
+    builder.Services.AddSingleton<RoomManager>();
 
     builder.Services.AddIdentityCore<User>()
                 .AddEntityFrameworkStores<MainDbContext>()
