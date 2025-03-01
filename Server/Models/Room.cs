@@ -6,13 +6,15 @@ namespace Server.Models;
 
 public class Room
 {
-    public long Id { get; set; }
+    public int Id { get; set; }
     
     [Required]
     public required long PlayerOneId { get; set; }
     
     [Required]
     public long? PlayerTwoId { get; set; }
+
+    public long? WinnerId { get; set; }
     
     [Required]
     public required ERoomState State { get; set; }
@@ -21,10 +23,10 @@ public class Room
     public List<RoomMove> Moves { get; set; } = [];
     
     [Column(TypeName = "jsonb")]
-    public RoomSetup? PlayerOneSetup { get; set; }
-    
+    public RoomSetup PlayerOneSetup { get; set; } = new ();
+
     [Column(TypeName = "jsonb")]
-    public RoomSetup? PlayerTwoSetup { get; set; }
+    public RoomSetup PlayerTwoSetup { get; set; } = new();
         
     public User? PlayerOne { get; set; }
     
@@ -39,10 +41,10 @@ public class Room
     public int LapCount { get; set; } = 1;
     
     [NotMapped]
-    public bool PlayerOneIsReady => PlayerOneSetup != null;
+    public bool PlayerOneIsReady => PlayerOneSetup.Ships.Count > 0;
 
     [NotMapped]
-    public bool PlayerTwoIsReady => PlayerTwoSetup != null;
+    public bool PlayerTwoIsReady => PlayerTwoSetup.Ships.Count > 0;
 
     [NotMapped]
     private const int LapCountSecond = 15;
@@ -50,14 +52,17 @@ public class Room
     [NotMapped]
     private System.Timers.Timer Timer { get; } = new(1000 * LapCountSecond);
 
-    public void StartTimer(Action<int> callBack)
+    [NotMapped] 
+    public Action<int, int>? CallbackTimer { get; set; }
+
+    public void StartTimer()
     {
         Timer.Enabled = true;
         Timer.AutoReset = false;
         Timer.Elapsed += (sender, args) =>
         {
             RunIntervalTimer();
-            callBack.Invoke(LapCount);
+            CallbackTimer?.Invoke(Id, LapCount);
         };
     }
 
@@ -77,29 +82,42 @@ public class Room
         Timer.AutoReset = false;
         Timer.Stop();
     }
+
+    public void Win(long playerId)
+    {
+        WinnerId = playerId;
+        EndedAt = DateTime.UtcNow;
+        State = ERoomState.Archived;
+    }
     
     public enum ERoomState
     {
         Playing,
         Pending,
+        Placing,
         Archived
     }
 
     public class RoomSetup
     {
-        public List<Ship> Ships { get; set; } = [];
-        public Dictionary<int, int>[] FiredOffsets { get; set; } = [];
-        public bool Dead = false;
+        public List<Ship> Ships { get; } = [];
+        public List<Tuple<int, int>> FiredOffsets { get; } = [];
+        public bool Dead;
 
         public class Ship
         {
-            public Tuple<int, int>[] Positions { get; set; } = [];
-            public Tuple<int, int>[] Hits { get; set; } = [];
-            public bool IsDrawned = false;
+            private readonly Tuple<int, int>[] _positions;
+            public Tuple<int, int>[] Hits { get; private set; } = [];
+            public bool IsDrawned { get; private set; }
+
+            public Ship(int[][] positions)
+            {
+                _positions = positions.Select(p => new Tuple<int, int>(p[0], p[1])).ToArray();
+            }
 
             public void TryHit(int xOffset, int yOffset)
             {
-                foreach (var position in Positions)
+                foreach (var position in _positions)
                 {
                     if (position.Item1 == xOffset && position.Item2 == yOffset)
                     {
@@ -107,15 +125,25 @@ public class Room
                         Hits = Hits.Append(hit).ToArray();
                     }
                 }
-                if (Positions.Length == Hits.Length)
+                if (_positions.Length == Hits.Length)
                 {
                     IsDrawned = true;
                 }
             }
         }
         
-        public void FireOffset(int xOffset, int yOffset)
+        public void RegisterShips(int[][][] shipsOffsets)
         {
+            foreach (var shipOffset in shipsOffsets)
+            {
+                Ships.Add(new Ship(shipOffset));
+            }
+        }
+        
+        public bool FireOffset(int xOffset, int yOffset)
+        {
+            var hitCount = Ships.Aggregate(0, (acc, ship) => acc + ship.Hits.Length);
+            FiredOffsets.Add(new Tuple<int, int>(xOffset, yOffset));
             foreach (var ship in Ships)
             {
                 ship.TryHit(xOffset, yOffset);
@@ -124,21 +152,17 @@ public class Room
             {
                 Dead = true;
             }
+            return hitCount != Ships.Aggregate(0, (acc, ship) => acc + ship.Hits.Length);
         }
     }
     
-    public class RoomMove
+    public record RoomMove
     {
-        public long Id { get; set; }
-    
+        public int Id { get; set; }
         public int Lap { get; set; }
-    
         public long PlayerId { get; set; }
-    
         public int XOffset { get; set; }
-    
         public int YOffset { get; set; }
-    
         public bool Hit { get; set; }
     }
 }

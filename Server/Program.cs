@@ -57,7 +57,6 @@ public class Program
     builder.Services.AddTransient<AuthService>();
     builder.Services.AddTransient<NoyauSihService>();
     builder.Services.AddScoped<RoomRepository>();
-    builder.Services.AddScoped<MoveRepository>();
     builder.Services.AddSingleton<RoomManager>();
 
     builder.Services.AddIdentityCore<User>()
@@ -89,14 +88,13 @@ public class Program
         });
   }
   
-  private static class ConfigurationProgram
+  public static class ConfigurationProgram
   {
-    private const string JwtPrivateKey = "JwtPrivateKey";
+    public const string JwtPrivateKey = "JwtPrivateKey";
     public const string ConnectionString = "ConnectionString";
   
     public static void EnsureSecretsAreDefined(IConfiguration configuration)
     {
-
      
       var secretsToCheck = new []
       {

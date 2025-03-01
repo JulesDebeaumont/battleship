@@ -109,7 +109,7 @@ public class AuthService
 
     private static string GetJwtPrivateKey(IConfiguration config)
     {
-        var key = config[$"{Configuration.JwtPrivateKey}"];
+        var key = config[$"{Program.ConfigurationProgram.JwtPrivateKey}"];
 
         if (string.IsNullOrEmpty(key))
         {

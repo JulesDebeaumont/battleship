@@ -7,103 +7,134 @@ namespace Server.Services;
 
 public class RoomManager
 {
-    private const int MaxRoomCount = 10;
-    private Dictionary<long, Room> _avaibleRooms = [];
+    private const int MaxRoomCount = 20;
+    private readonly Dictionary<long, Room> _availableRooms = [];
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly IHubContext<RoomHub> _hubContext;
 
     public RoomManager(IServiceScopeFactory serviceScopeFactory, IHubContext<RoomHub> hubContext)
     {
         _serviceScopeFactory = serviceScopeFactory;
-        _hubContext = hubContext;
     }
 
-    public Room GetRoom(int id)
+    public Room? GetRoom(int id)
     {
-        return _avaibleRooms[id];
+        return _availableRooms[id];
     }
 
-    public async Task CreateRoom(long playerOneId)
+    public bool CanCreateRoom()
     {
-        if (_avaibleRooms.Count > MaxRoomCount)
-        {
-            return;
-        }
+        return _availableRooms.Count < MaxRoomCount;
+    }
+
+    public bool CanJoinRoomAsOpponent(int roomId, long playerTwoId)
+    {
+        var room = GetRoom(roomId);
+        if (room == null) return false;
+        if (room.State != Room.ERoomState.Pending) return false;
+        if (room.PlayerTwoId != null) return false;
+        if (room.PlayerOneId == playerTwoId) return false;
+        return true;
+    }
+
+    public bool CanJoinRoomAsSpecatator(int roomId, long userId)
+    {
+        var room = GetRoom(roomId);
+        if (room == null) return false;
+        if (room.State is  Room.ERoomState.Archived) return false;
+        if (room.PlayerOneId == userId || room.PlayerTwoId == userId) return false;
+        return true;
+    }
+
+    public async Task<Room> CreateRoom(long playerOneId, Action<int, int> callbackTimer)
+    {
         var room = new Room
         {
             State = Room.ERoomState.Pending,
             PlayerOneId = playerOneId,
+            CallbackTimer = callbackTimer
         };
         var roomRepo = GetRoomRepository();
         await roomRepo.CreateRoom(room);
-        _avaibleRooms.Add(room.Id, room);
-        await _hubContext.Clients.Group("AllRooms").SendAsync("RoomCreated", room);
-    }
-    
-    public int GetRoomLapTimer(int roomId)
-    {
-        var room = GetRoom(roomId);
-        return room.GetTimerInSeconds();
+        _availableRooms.Add(room.Id, room);
+        return room;
     }
 
-    public void JoinRoomAsPlayer(long playerTwoId, int roomId)
+    public void JoinRoomAsOpponent(long playerTwoId, Room room)
     {
-        var room = GetRoom(roomId);
-        room.PlayerOneId = playerTwoId;
-        room.State = Room.ERoomState.Playing;
+        room.PlayerTwoId = playerTwoId;
+        room.State = Room.ERoomState.Placing;
         room.StartedAt = DateTime.UtcNow;
-        room.StartTimer(TellHubGroupLapSeconds(roomId));
     }
 
-    private Action<int> TellHubGroupLapSeconds(int roomId)
-    {
-        return (int lapSeconds) => _hubContext.Clients.Group(roomId.ToString()).SendAsync("Timer", lapSeconds);
-    }
-
-    public void JoinRoomAsSpectator(int roomId)
+    public void JoinRoomAsSpectator(Room room)
     {
         // TODO
     }
 
-    public async Task PlayerConfirmReadiness(int roomId, int playerId, Room.RoomSetup setup)
+    public void RemoveUserFromRoom(long userId, Room room)
     {
-        // TODO
-        await _hubContext.Clients.Group(roomId.ToString()).SendAsync("PlayerReady", playerId);
+        if (room.State is not (Room.ERoomState.Placing or Room.ERoomState.Playing)) return;
+        if (room.PlayerOneId == userId || room.PlayerTwoId == userId)
+        {
+            room.Win(userId);
+        }
     }
 
-    public async Task PlayerFireInRoom(long playerId, int roomId, int xOffset, int yOffset)
+    public bool CanPlayerPlaceInRoom(long playerId, int roomId)
     {
         var room = GetRoom(roomId);
-        room.StopTimer();
-        if (!PlayerCanPlay(room, playerId)) return;
-        var isPlayerOnePlaying = room.PlayerOneId == playerId;
-        var roomSetup = isPlayerOnePlaying ? room.PlayerTwoSetup! : room.PlayerOneSetup!;
-        roomSetup.FireOffset(xOffset, yOffset);
-        if (roomSetup.Dead)
-        {
-            room.State = Room.ERoomState.Archived;
-            room.EndedAt = DateTime.UtcNow;
-            _avaibleRooms.Remove(roomId);
-            await _hubContext.Clients.Group("AllRooms").SendAsync("RoomRemoved", roomId);
-            var roomRepo = GetRoomRepository();
-            roomRepo.UpdateRoom(room);
-        }
-        else
-        {
-            room.StartTimer(TellHubGroupLapSeconds(roomId));
-        }
-        await _hubContext.Clients.Group(roomId.ToString()).SendAsync("Move", room);
+        if (room == null) return false;
+        return true;
     }
 
-    private static bool PlayerCanPlay(Room room, long playerId)
+    public void PlayerPlaceInRoom(Room room, long playerId, int[][][] shipOffsets)
     {
+        // TODO
+        if (room.PlayerOneIsReady && room.PlayerTwoIsReady)
+        {
+            room.StartTimer();
+        }
+    }
+
+    public bool CanPlayerFireInRoom(int roomId, long playerId)
+    {
+        var room = GetRoom(roomId);
+        if (room == null) return false;
+        if (room.State != Room.ERoomState.Playing) return false;
         if (room.LapCount % 2 == 0)
         {
             return playerId == room.PlayerTwoId;
         }
         return playerId == room.PlayerOneId;
     }
-    
+
+    public void PlayerFireInRoom(long playerId, Room room, int xOffset, int yOffset)
+    {
+        room.StopTimer();
+        var isPlayerOnePlaying = room.PlayerOneId == playerId;
+        var roomSetup = isPlayerOnePlaying ? room.PlayerTwoSetup! : room.PlayerOneSetup!;
+        var hit = roomSetup.FireOffset(xOffset, yOffset);
+        room.Moves.Add(new Room.RoomMove
+        {
+            Id = room.Moves.Count + 1,
+            Lap = room.LapCount,
+            PlayerId = playerId,
+            XOffset = xOffset,
+            YOffset = yOffset,
+            Hit = hit
+        });
+        if (roomSetup.Dead)
+        {
+            room.Win(playerId);
+            _availableRooms.Remove(room.Id);
+            var roomRepo = GetRoomRepository();
+            roomRepo.UpdateRoom(room);
+        }
+        else
+        {
+            room.StartTimer();
+        }
+    }
 
     private RoomRepository GetRoomRepository()
     {
