@@ -10,7 +10,8 @@ public class User : IdentityUser<long>
     [MinLength(7)]
     public required string IdRes { get; set; }
 
-    [MaxLength(20)] 
+    [MaxLength(20)]
+    [MinLength(3)]
     public string Pseudo { get; set; } = string.Empty;
     
     public int GameCount { get; set; }

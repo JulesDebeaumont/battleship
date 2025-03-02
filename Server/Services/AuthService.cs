@@ -21,7 +21,6 @@ public class AuthService
         _config = config;
     }
 
-
     public ResponseService<string> GenerateUserJwt(User user)
     {
         var response = new ResponseService<string>();
@@ -32,16 +31,12 @@ public class AuthService
     public async Task<ResponseService<User>> CreateOrUpdateUserFromNoyauSih(NoyauSihService.NoyauSihUser noyauUser)
     {
         var response = new ResponseService<User>();
-        if (noyauUser?.profils.ToString()?.Contains("ADMIN") ?? true) {
-          response.AddError("User is not admin and shall not access to ExpedIIAS.");
-          return response;
-        }
-        var userProperties = new User()
+        var userProperties = new User
         {
             IdRes = noyauUser.personne.id_res,
             Email = noyauUser.personne.courriel,
         };
-        var user = await _userManager.FindByIdAsync(userProperties.IdRes);
+        var user = await _userManager.FindByIdAsync(userProperties.Id.ToString());
         if (user == null)
         {
             await _userManager.CreateAsync(userProperties);
@@ -75,10 +70,10 @@ public class AuthService
         );
 
         // Custom data
-        securityToken.Payload["idRes"] = user.IdRes;
+        securityToken.Payload["id"] = user.Id;
+        securityToken.Payload["pseudo"] = user.Pseudo;
 
-        string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
-        return tokenString;
+        return new JwtSecurityTokenHandler().WriteToken(securityToken);
     }
 
     public static TokenValidationParameters GetAuthServiceTokenValidationParameters(IConfiguration config)
@@ -115,7 +110,6 @@ public class AuthService
         {
             throw new InvalidOperationException("JWT Private Key is missing or not configured.");
         }
-
         return key;
     }
 }

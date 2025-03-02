@@ -2,7 +2,7 @@ namespace Server.Services.Utils;
 
 public abstract class ResponseServiceAbstract
 {
-    public bool IsSuccess { get; set; } = false;
+    public bool IsSuccess { get; set; }
     public List<string> Errors { get; set; } = [];
 
     public void AddError(string error)

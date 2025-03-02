@@ -1,10 +1,23 @@
 import type { RouteRecordRaw } from 'vue-router';
+import { guardIsConnected, guardIsDisconnected } from './guards';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    name: 'root',
+    redirect: { name: 'home'}
+  },
+  {
+    path: '/login',
+    name: 'login',
+    beforeEnter: guardIsDisconnected,
+    component: () => import('pages/LoginPage.vue')
+  },
+  {
+    path: '/home',
+    name: 'home',
+    beforeEnter: guardIsConnected,
+    component: () => import('pages/HomePage.vue')
   },
 
   // Always leave this as last one,

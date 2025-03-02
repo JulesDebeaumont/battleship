@@ -90,7 +90,7 @@ public class RoomManager
     public void PlayerPlaceInRoom(Room room, long playerId, int[][][] shipOffsets)
     {
         // TODO
-        if (room.PlayerOneIsReady && room.PlayerTwoIsReady)
+        if (room.BothPlayerReady)
         {
             room.StartTimer();
         }

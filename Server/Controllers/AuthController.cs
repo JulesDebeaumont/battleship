@@ -38,6 +38,7 @@ namespace Server.Controllers
             var authServiceResponseJwt = _authService.GenerateUserJwt(authServiceResponseUser.Data);
             return Ok(authServiceResponseJwt.Data);
         }
+        
     }
 
     public record LoginDtoIn
@@ -45,4 +46,5 @@ namespace Server.Controllers
         public required string CasTicket { get; set; }
         public required string Service { get; set; }
     }
+    
 }

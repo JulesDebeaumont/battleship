@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Server.DAL.Contexts;
 using Server.Models;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Server.DAL.Repositories;
 
@@ -39,6 +40,11 @@ public class RoomRepository
 
     public void UpdateRoom(Room room)
     {
+        // TODO puts these in a method in model?
+        // TODO should have the same for inverted way?
+        room.MovesJsonRaw = JsonSerializer.Serialize(room.Moves);
+        room.PlayerOneSetupJsonRaw = JsonSerializer.Serialize(room.PlayerOneSetup);
+        room.PlayerTwoSetupJsonRaw = JsonSerializer.Serialize(room.PlayerTwoSetup);
         _context.Rooms.Update(room);
     }
 }   

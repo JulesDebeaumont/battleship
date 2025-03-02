@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.Serialization;
 
 namespace Server.Models;
 
@@ -20,13 +19,24 @@ public class Room
     public required ERoomState State { get; set; }
 
     [Column(TypeName = "jsonb")]
-    public List<RoomMove> Moves { get; set; } = [];
-    
-    [Column(TypeName = "jsonb")]
-    public RoomSetup PlayerOneSetup { get; set; } = new ();
+    [MaxLength(7000)]
+    public string MovesJsonRaw { get; set; } = string.Empty;
+
+    [NotMapped] public List<RoomMove> Moves { get; set; } = [];
 
     [Column(TypeName = "jsonb")]
-    public RoomSetup PlayerTwoSetup { get; set; } = new();
+    [MaxLength(2000)]
+    public string PlayerOneSetupJsonRaw { get; set; } = string.Empty;
+    
+    [NotMapped]
+    public RoomSetup? PlayerOneSetup { get; set; }
+
+    [Column(TypeName = "jsonb")]
+    [MaxLength(2000)]
+    public string PlayerTwoSetupJsonRaw { get; set; } = string.Empty;
+    
+    [NotMapped]
+    public RoomSetup? PlayerTwoSetup { get; set; }
         
     public User? PlayerOne { get; set; }
     
@@ -41,10 +51,13 @@ public class Room
     public int LapCount { get; set; } = 1;
     
     [NotMapped]
-    public bool PlayerOneIsReady => PlayerOneSetup.Ships.Count > 0;
+    public bool PlayerOneIsReady => PlayerOneSetup?.Ships.Count > 0;
 
     [NotMapped]
-    public bool PlayerTwoIsReady => PlayerTwoSetup.Ships.Count > 0;
+    public bool PlayerTwoIsReady => PlayerTwoSetup?.Ships.Count > 0;
+    
+    [NotMapped]
+    public bool BothPlayerReady => PlayerOneIsReady && PlayerTwoIsReady;
 
     [NotMapped]
     private const int LapCountSecond = 15;

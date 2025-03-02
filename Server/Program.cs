@@ -56,6 +56,7 @@ public class Program
         options.UseNpgsql(builder.Configuration[ConfigurationProgram.ConnectionString]));
     builder.Services.AddTransient<AuthService>();
     builder.Services.AddTransient<NoyauSihService>();
+    builder.Services.AddTransient<UserService>();
     builder.Services.AddScoped<RoomRepository>();
     builder.Services.AddSingleton<RoomManager>();
 
