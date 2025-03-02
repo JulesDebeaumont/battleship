@@ -4,7 +4,6 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Server.Models;
-using Server.Services.Utils;
 
 namespace Server.Services;
 
@@ -21,16 +20,13 @@ public class AuthService
         _config = config;
     }
 
-    public ResponseService<string> GenerateUserJwt(User user)
+    public string GenerateUserJwt(User user)
     {
-        var response = new ResponseService<string>();
-        response.Data = GenerateTokenString(user);
-        return response;
+        return GenerateTokenString(user);
     }
 
-    public async Task<ResponseService<User>> CreateOrUpdateUserFromNoyauSih(NoyauSihService.NoyauSihUser noyauUser)
+    public async Task<User> CreateOrUpdateUserFromNoyauSih(NoyauSihService.NoyauSihUser noyauUser)
     {
-        var response = new ResponseService<User>();
         var userProperties = new User
         {
             IdRes = noyauUser.personne.id_res,
@@ -40,16 +36,11 @@ public class AuthService
         if (user == null)
         {
             await _userManager.CreateAsync(userProperties);
-            response.Data = userProperties;
+            return userProperties;
         }
-        else
-        {
-            userProperties.Id = user.Id;
-            await _userManager.UpdateAsync(userProperties);
-            response.Data = user;
-        }
-        response.IsSuccess = true;
-        return response;
+        userProperties.Id = user.Id;
+        await _userManager.UpdateAsync(userProperties);
+        return user;
     }
 
     private string GenerateTokenString(User user)

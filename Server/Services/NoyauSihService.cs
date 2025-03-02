@@ -10,54 +10,40 @@ public class NoyauSihService
   private readonly string ResponseCasOk = "yes";
   private readonly string ApplicationCI = "CI0555"; // www-iias
 
-  async public Task<ResponseService<string>> VerifyTicketFromCas(string ticket, string service)
+  public async Task<string> VerifyTicketFromCas(string ticket, string service)
   {
-    var response = new ResponseService<string>();
     try
     {
-      using (var client = new HttpClient())
+      using var client = new HttpClient();
+      var responseCas = await client.GetAsync($"{CasUrl}/validate?service={service}&ticket={ticket}");
+      responseCas.EnsureSuccessStatusCode();
+      var responseCasArray = (await responseCas.Content.ReadAsStringAsync()).Split("\n");
+      if (responseCasArray.First() != ResponseCasOk)
       {
-        var responseCas = await client.GetAsync($"{CasUrl}/validate?service={service}&ticket={ticket}");
-        responseCas.EnsureSuccessStatusCode();
-        var responseCasArray = (await responseCas.Content.ReadAsStringAsync()).Split("\n");
-        if (responseCasArray?.First() != ResponseCasOk)
-        {
-          response.Errors.Add("CAS did not authorize");
-          return response;
-        }
-        response.IsSuccess = true;
-        response.Data = responseCasArray[1];
+        throw new ServiceError("CAS did not authorize", ServiceError.EServiceErrorType.NotAuthorized);
       }
-      return response;
+      return responseCasArray[1];
     }
     catch (Exception exception)
     {
-      response.Errors.Add(exception.Message);
-      return response;
+      throw new ServiceError("An error has occured", ServiceError.EServiceErrorType.InternalError, exception);
     }
   }
 
-  async public Task<ResponseService<NoyauSihUser>> GetUserFromNoyauSih(string userIdRes)
+  public async Task<NoyauSihUser> GetUserFromNoyauSih(string userIdRes)
   {
-    var response = new ResponseService<NoyauSihUser>();
     try
     {
-      using (var client = new HttpClient())
-      {
-        var responseNoyau = await client.GetAsync($"{NoyauSihUrl}/iam/{userIdRes}/{ApplicationCI}/habilitations.json");
-        responseNoyau.EnsureSuccessStatusCode();
-        var responseNoyauSih = await responseNoyau.Content.ReadAsStringAsync();
-        var noyauSihJson = JsonSerializer.Deserialize<NoyauSihUser>(responseNoyauSih);
-        response.Data = noyauSihJson;
-        response.IsSuccess = true;
-      }
-
-      return response;
+      using var client = new HttpClient();
+      var responseNoyau = await client.GetAsync($"{NoyauSihUrl}/iam/{userIdRes}/{ApplicationCI}/habilitations.json");
+      responseNoyau.EnsureSuccessStatusCode();
+      var responseNoyauSih = await responseNoyau.Content.ReadAsStringAsync();
+      var noyauSihJson = JsonSerializer.Deserialize<NoyauSihUser>(responseNoyauSih);
+      return noyauSihJson!;
     }
     catch (Exception exception)
     {
-      response.Errors.Add(exception.Message);
-      return response;
+      throw new ServiceError("An error has occured", ServiceError.EServiceErrorType.InternalError, exception);
     }
   }
 

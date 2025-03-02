@@ -84,12 +84,24 @@ public class RoomManager
     {
         var room = GetRoom(roomId);
         if (room == null) return false;
+        if (room.State != Room.ERoomState.Placing) return false;
+        if (room.PlayerOneId != playerId && room.PlayerTwoId != playerId) return false;
+        if (room.PlayerOneId == playerId && room.PlayerOneSetup != null) return false;
+        if (room.PlayerTwoId == playerId && room.PlayerTwoSetup != null) return false;
         return true;
     }
 
     public void PlayerPlaceInRoom(Room room, long playerId, int[][][] shipOffsets)
     {
-        // TODO
+        var setup = new Room.RoomSetup(shipOffsets);
+        if (playerId == room.PlayerOneId)
+        {
+            room.PlayerOneSetup = setup;
+        }
+        else
+        {
+            room.PlayerTwoSetup = setup;
+        }
         if (room.BothPlayerReady)
         {
             room.StartTimer();

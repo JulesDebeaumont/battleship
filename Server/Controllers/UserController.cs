@@ -17,11 +17,7 @@ public class UserController : ControllerBase
     [HttpPut("update-pseudo")]
     public async Task<ActionResult> UpdatePseudo(UpdatePseudoDtoIn dtoIn)
     {
-        var result = await _userService.UpdateUserPseudo(User.Identity!.Name!, dtoIn.Pseudo);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result.Errors.ToString());
-        }
+        await _userService.UpdateUserPseudo(User.Identity!.Name!, dtoIn.Pseudo);
         return Ok();
     }
     

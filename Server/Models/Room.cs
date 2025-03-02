@@ -117,6 +117,14 @@ public class Room
         public List<Tuple<int, int>> FiredOffsets { get; } = [];
         public bool Dead;
 
+        public RoomSetup(int[][][] shipsOffsets)
+        {
+            foreach (var shipOffset in shipsOffsets)
+            {
+                Ships.Add(new Ship(shipOffset));
+            }
+        }
+
         public class Ship
         {
             private readonly Tuple<int, int>[] _positions;
@@ -142,14 +150,6 @@ public class Room
                 {
                     IsDrawned = true;
                 }
-            }
-        }
-        
-        public void RegisterShips(int[][][] shipsOffsets)
-        {
-            foreach (var shipOffset in shipsOffsets)
-            {
-                Ships.Add(new Ship(shipOffset));
             }
         }
         

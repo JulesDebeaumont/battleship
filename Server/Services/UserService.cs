@@ -13,20 +13,14 @@ public class UserService
         _userManager = userManager;
     }
 
-    public async Task<ResponseService> UpdateUserPseudo(string userId, string pseudo)
+    public async Task UpdateUserPseudo(string userId, string pseudo)
     {
-        var response = new ResponseService();
-        
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
-            response.AddError("User not found");
-            return response;
+            throw new ServiceError("User not found", ServiceError.EServiceErrorType.NotFound);
         }
-        
         user.Pseudo = pseudo;
         await _userManager.UpdateAsync(user);
-
-        return response;
     }
 }

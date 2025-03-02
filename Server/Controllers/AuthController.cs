@@ -20,23 +20,11 @@ namespace Server.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login(LoginDtoIn dtoIn)
         {
-            var noyauServiceResponseCas = await _noyauService.VerifyTicketFromCas(dtoIn.CasTicket, dtoIn.Service);
-            if (!noyauServiceResponseCas.IsSuccess)
-            {
-                return Unauthorized(noyauServiceResponseCas.Errors);
-            }
-            var noyauServiceReponseUser = await _noyauService.GetUserFromNoyauSih(noyauServiceResponseCas.Data);
-            if (!noyauServiceReponseUser.IsSuccess)
-            {
-                return Unauthorized(noyauServiceReponseUser.Errors);
-            }
-            var authServiceResponseUser = await _authService.CreateOrUpdateUserFromNoyauSih(noyauServiceReponseUser.Data);
-            if (!authServiceResponseUser.IsSuccess)
-            {
-                return Unauthorized(authServiceResponseUser.Errors);
-            }
-            var authServiceResponseJwt = _authService.GenerateUserJwt(authServiceResponseUser.Data);
-            return Ok(authServiceResponseJwt.Data);
+            var userIdRes = await _noyauService.VerifyTicketFromCas(dtoIn.CasTicket, dtoIn.Service);
+            var noyauSihUser = await _noyauService.GetUserFromNoyauSih(userIdRes);
+            var authUser = await _authService.CreateOrUpdateUserFromNoyauSih(noyauSihUser);
+            var jwt = _authService.GenerateUserJwt(authUser);
+            return Ok(jwt);
         }
         
     }

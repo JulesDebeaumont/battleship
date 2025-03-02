@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Server.Models;
 using Server.Services;
 
 namespace Server.Hubs;
@@ -112,7 +111,7 @@ public class RoomHub : Hub
             var room = _roomManager.GetRoom(roomId)!;
             _roomManager.PlayerPlaceInRoom(room, playerId, shipOffsets);
             await Clients.Group(roomId.ToString()).SendAsync("PlayerReady", playerId);
-            if (room.PlayerOneIsReady && room.PlayerTwoIsReady)
+            if (room.BothPlayerReady)
             {
                 await Clients.Group(roomId.ToString()).SendAsync("GameOn", playerId);
                 // TODO release info to spectator room
