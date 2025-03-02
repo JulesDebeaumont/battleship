@@ -47,4 +47,4 @@ export interface IGetRoomByIdFrontDTO extends IRoom {
     lap: number;
   }[]
 }
-export type TRoomState = 'playing' | 'pending' | 'archived'
+export type TRoomState = 'playing' | 'pending' | 'archived' | 'placing'
