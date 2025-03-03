@@ -38,7 +38,7 @@ public class Program
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
-    app.MapHub<RoomHub>("/api/ws/rooms");
+    app.MapHub<RoomGoingOnHub>("/api/ws/rooms");
     app.Run();
   }
 

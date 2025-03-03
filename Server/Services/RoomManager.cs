@@ -9,12 +9,10 @@ public class RoomManager
     private const int MaxRoomCount = 20;
     private readonly Dictionary<string, Room> _availableRooms = [];
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly UserManager<User> _userManager;
 
-    public RoomManager(IServiceScopeFactory serviceScopeFactory, UserManager<User> userManager)
+    public RoomManager(IServiceScopeFactory serviceScopeFactory)
     {
         _serviceScopeFactory = serviceScopeFactory;
-        _userManager = userManager;
     }
 
     public List<RestrictedRoomDto> GetAvailableRooms()
@@ -97,7 +95,8 @@ public class RoomManager
 
     public async Task<Room> CreateRoom(long playerOneId, Action<string, int> callbackTimer)
     {
-        var playerOne = await _userManager.FindByIdAsync(playerOneId.ToString());
+        var userManager = GetUserManager();
+        var playerOne = await userManager.FindByIdAsync(playerOneId.ToString());
         var room = new Room
         {
             Guid = Guid.NewGuid().ToString(),
@@ -112,7 +111,8 @@ public class RoomManager
 
     public async Task JoinRoomAsOpponent(long playerTwoId, Room room)
     {
-        var playerTwo = await _userManager.FindByIdAsync(playerTwoId.ToString());
+        var userManager = GetUserManager();
+        var playerTwo = await userManager.FindByIdAsync(playerTwoId.ToString());
         room.PlayerTwo = playerTwo;
         room.PlayerTwoId = playerTwoId;
         room.State = Room.ERoomState.Placing;
@@ -209,8 +209,12 @@ public class RoomManager
 
     private RoomRepository GetRoomRepository()
     {
-        var scope = _serviceScopeFactory.CreateScope();
-        return scope.ServiceProvider.GetService<RoomRepository>()!;
+        return _serviceScopeFactory.CreateScope().ServiceProvider.GetService<RoomRepository>()!;
+    }
+
+    private UserManager<User> GetUserManager()
+    {
+        return _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<UserManager<User>>();
     }
     
 }

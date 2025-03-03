@@ -5,12 +5,12 @@ using Server.Services;
 namespace Server.Hubs;
 
 [Authorize]
-public class RoomHub : Hub
+public class RoomGoingOnHub : Hub
 {
     private const string AllRoomGroupName = "AllRooms";
     private readonly RoomManager _roomManager;
 
-    public RoomHub(RoomManager roomManager)
+    public RoomGoingOnHub(RoomManager roomManager)
     {
         _roomManager = roomManager;
     }
@@ -20,13 +20,18 @@ public class RoomHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, AllRoomGroupName);
     }
 
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        
+        return base.OnDisconnectedAsync(exception);
+    }
+
     public async Task CreateRoom()
     {
         if (_roomManager.CanCreateRoom())
         {
             var room = _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapSeconds);
             await Clients.Caller.SendAsync("RoomCreated", room.Id);
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
             await Groups.AddToGroupAsync(Context.ConnectionId, room.Id.ToString());
             await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
         }
@@ -47,7 +52,6 @@ public class RoomHub : Hub
                     var room = _roomManager.GetRoom(roomGuid)!;
                     await _roomManager.JoinRoomAsOpponent(playerId, room);
                     await Clients.Caller.SendAsync("JoinedRoomAsOpponent", roomGuid);
-                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
                     await Groups.AddToGroupAsync(Context.ConnectionId, roomGuid);
                     await Clients.Group(roomGuid).SendAsync("OpponentJoined", room);
                     await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
@@ -63,7 +67,6 @@ public class RoomHub : Hub
                 {
                     await Clients.Caller.SendAsync("JoinedRoomAsSpectator", roomGuid);
                     await Groups.AddToGroupAsync(Context.ConnectionId, $"{roomGuid}-spectator");
-                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
                 }
                 else
                 {
