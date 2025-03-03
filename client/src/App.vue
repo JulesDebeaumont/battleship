@@ -25,9 +25,10 @@ async function checkForTicketInUrl() {
 }
 
 onMounted(async () => {
-  await checkForTicketInUrl();
   if (!userStore.isConnected) {
-    userStore.trySetupTokenFromCookies();
+    userStore.getInitialPathRequested();
+    await userStore.trySetupTokenFromCookies();
   }
+  await checkForTicketInUrl();
 })
 </script>

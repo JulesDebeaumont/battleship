@@ -1,7 +1,8 @@
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { Cookies } from 'quasar'
-import { loginAPI } from 'src/api/login.api'
+import { fakeLoginAPI, loginAPI } from 'src/api/login.api'
+import { useRoute } from 'vue-router'
 
 interface IUser {
   id: number
@@ -12,7 +13,9 @@ interface IParsedToken {
   user: IUser
 }
 const COOKIE_TOKEN = 'SpaceShipBattle-AccessToken'
+const COOKIE_ROUTE_ENTERING = 'SpaceShipBattle-RequestedRoute'
 const COOKIE_PATH = '/'
+const SAME_SITE = 'Lax'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -31,9 +34,9 @@ export const useUserStore = defineStore('user', {
     },
   },
   actions: {
-    trySetupTokenFromCookies() {
+    async trySetupTokenFromCookies() {
       if (Cookies.has(COOKIE_TOKEN)) {
-        this.authenticate(Cookies.get(COOKIE_TOKEN))
+        await this.authenticate(Cookies.get(COOKIE_TOKEN))
       }
     },
     clear() {
@@ -44,20 +47,29 @@ export const useUserStore = defineStore('user', {
     askCasTicket() {
       window.location.href = process.env.CAS_URL + window.location.origin
     },
+    getInitialPathRequested() {
+      const route = useRoute()
+      Cookies.set(COOKIE_ROUTE_ENTERING, route.fullPath, { sameSite: SAME_SITE, path: COOKIE_PATH })
+    },
     async askServerToken(casTicket: string) {
       try {
         const token = (await loginAPI(casTicket)).token;
-        this.authenticate(token);
+        await this.authenticate(token);
       } catch (error) {
         console.log(error)
       }
     },
-    authenticate(token: string) {
+    async fakeAuth(idRes: string) {
+      const jwt = (await fakeLoginAPI(idRes)).token
+      await this.authenticate(jwt);
+    },
+    async authenticate(token: string) {
       this.token = token
       const parsedToken = jwtDecode<IParsedToken>(token)
       this.user = parsedToken.user
       this.tokenExpiration = parsedToken.exp
-      Cookies.set(COOKIE_TOKEN, token, { sameSite: 'Lax', path: COOKIE_PATH })
+      Cookies.set(COOKIE_TOKEN, token, { sameSite: SAME_SITE, path: COOKIE_PATH })
+      await this.router.push(Cookies.get(COOKIE_ROUTE_ENTERING));
     },
   },
 })

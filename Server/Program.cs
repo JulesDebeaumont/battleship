@@ -70,7 +70,19 @@ public class Program
           options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         }).AddJwtBearer(options =>
         {
-          options.TokenValidationParameters = AuthService.GetAuthServiceTokenValidationParameters(builder.Configuration);
+          options.TokenValidationParameters = AuthService.GetAuthServiceTokenValidationParameters(builder.Configuration); // Https calls
+          options.Events = new JwtBearerEvents // Websockets calls
+          {
+            OnMessageReceived = context =>
+            {
+              var accessToken = context.Request.Query["access_token"];
+              if (!string.IsNullOrEmpty(accessToken))
+              {
+                context.Token = accessToken;
+              }
+              return Task.CompletedTask;
+            }
+          };
         });
     builder.Services.AddAuthorization();
     builder.Services.AddCors(options =>

@@ -24,7 +24,17 @@ namespace Server.Controllers
             var noyauSihUser = await _noyauService.GetUserFromNoyauSih(userIdRes);
             var authUser = await _authService.CreateOrUpdateUserFromNoyauSih(noyauSihUser);
             var jwt = _authService.GenerateUserJwt(authUser);
-            return Ok(jwt);
+            return Ok(new { token = jwt });
+        }
+
+        // TODO dev only, no CAS
+        [HttpPost("fake-login")]
+        public async Task<ActionResult> FakeLogin(FakeLoginDtoIn dtoIn)
+        {
+            var fakeUserFromFakeNoay = await _noyauService.GetFakeUserFromNoyauSih(dtoIn.IdRes);
+            var authUser = await _authService.CreateOrUpdateUserFromNoyauSih(fakeUserFromFakeNoay);
+            var jwt = _authService.GenerateUserJwt(authUser);
+            return Ok(new { token = jwt });
         }
         
     }
@@ -33,6 +43,11 @@ namespace Server.Controllers
     {
         public required string CasTicket { get; set; }
         public required string Service { get; set; }
+    }
+    
+    public record FakeLoginDtoIn
+    {
+        public required string IdRes { get; set; }
     }
     
 }

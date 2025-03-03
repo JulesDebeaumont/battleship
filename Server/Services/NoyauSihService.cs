@@ -46,6 +46,50 @@ public class NoyauSihService
       throw new ServiceError("An error has occured", ServiceError.EServiceErrorType.InternalError, exception);
     }
   }
+  
+  public async Task<NoyauSihUser> GetFakeUserFromNoyauSih(string userIdRes)  {
+    if (userIdRes == "000001")
+    {
+      return new NoyauSihUser
+      {
+        personne = new NoyauSihUser.NoyauSihUserPersonne
+        {
+          courriel = "test1@chu-reims.fr",
+          nom = "MOULARD",
+          prenom = "Didier",
+          id_res = "000001"
+        },
+        profils = ""
+      };
+    }
+    
+    if (userIdRes == "000002")
+    {
+      return new NoyauSihUser
+      {
+        personne = new NoyauSihUser.NoyauSihUserPersonne
+        {
+          courriel = "test2@chu-reims.fr",
+          nom = "JACKSON",
+          prenom = "Michael",
+          id_res = "000002"
+        },
+        profils = ""
+      };
+    }
+    
+    return new NoyauSihUser
+    {
+      personne = new NoyauSihUser.NoyauSihUserPersonne
+      {
+        courriel = "test@chu-reims.fr",
+        nom = "??",
+        prenom = "??",
+        id_res = "000000"
+      },
+      profils = ""
+    };
+  }
 
   public record NoyauSihUser
   {

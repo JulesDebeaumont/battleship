@@ -8,9 +8,12 @@ public class Room
     public int Id { get; set; }
     
     [Required]
-    public required long PlayerOneId { get; set; }
+    [MaxLength(100)]
+    public required string Guid { get; set; }
     
     [Required]
+    public required long PlayerOneId { get; set; }
+    
     public long? PlayerTwoId { get; set; }
 
     public long? WinnerId { get; set; }
@@ -66,7 +69,7 @@ public class Room
     private System.Timers.Timer Timer { get; } = new(1000 * LapCountSecond);
 
     [NotMapped] 
-    public Action<int, int>? CallbackTimer { get; set; }
+    public Action<string, int>? CallbackTimer { get; set; }
 
     public void StartTimer()
     {
@@ -75,7 +78,7 @@ public class Room
         Timer.Elapsed += (sender, args) =>
         {
             RunIntervalTimer();
-            CallbackTimer?.Invoke(Id, LapCount);
+            CallbackTimer?.Invoke(Guid, LapCount);
         };
     }
 
@@ -99,6 +102,12 @@ public class Room
     public void Win(long playerId)
     {
         WinnerId = playerId;
+        EndedAt = DateTime.UtcNow;
+        State = ERoomState.Archived;
+    }
+
+    public void Archived()
+    {
         EndedAt = DateTime.UtcNow;
         State = ERoomState.Archived;
     }

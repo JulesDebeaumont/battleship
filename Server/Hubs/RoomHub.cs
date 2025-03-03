@@ -7,6 +7,7 @@ namespace Server.Hubs;
 [Authorize]
 public class RoomHub : Hub
 {
+    private const string AllRoomGroupName = "AllRooms";
     private readonly RoomManager _roomManager;
 
     public RoomHub(RoomManager roomManager)
@@ -14,14 +15,20 @@ public class RoomHub : Hub
         _roomManager = roomManager;
     }
 
+    public async Task JoinAllRoomsGroup()
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, AllRoomGroupName);
+    }
+
     public async Task CreateRoom()
     {
         if (_roomManager.CanCreateRoom())
         {
-            var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapSeconds);
+            var room = _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapSeconds);
             await Clients.Caller.SendAsync("RoomCreated", room.Id);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
             await Groups.AddToGroupAsync(Context.ConnectionId, room.Id.ToString());
-            await Clients.Group("AllRooms").SendAsync("RoomCreated", room);
+            await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
         }
         else
         {
@@ -29,19 +36,21 @@ public class RoomHub : Hub
         }
     }
 
-    public async Task JoinRoom(int roomId, EJoinGroupMode mode)
+    public async Task JoinRoom(string roomGuid, EJoinGroupMode mode)
     {
         var playerId = GetCurrentUserId();
         switch (mode)
         {
             case EJoinGroupMode.Opponent:
-                if (_roomManager.CanJoinRoomAsOpponent(roomId, playerId))
+                if (_roomManager.CanJoinRoomAsOpponent(roomGuid, playerId))
                 {
-                    var room = _roomManager.GetRoom(roomId)!;
-                    _roomManager.JoinRoomAsOpponent(playerId, room);
-                    await Clients.Caller.SendAsync("JoinedRoomAsOpponent", roomId);
-                    await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-                    await Clients.Group(roomId.ToString()).SendAsync("OpponentJoined", room);
+                    var room = _roomManager.GetRoom(roomGuid)!;
+                    await _roomManager.JoinRoomAsOpponent(playerId, room);
+                    await Clients.Caller.SendAsync("JoinedRoomAsOpponent", roomGuid);
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
+                    await Groups.AddToGroupAsync(Context.ConnectionId, roomGuid);
+                    await Clients.Group(roomGuid).SendAsync("OpponentJoined", room);
+                    await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
                 }
                 else
                 {
@@ -50,13 +59,11 @@ public class RoomHub : Hub
                 break;
             
             case EJoinGroupMode.Spectator:
-                if (_roomManager.CanJoinRoomAsSpecatator(roomId, playerId))
+                if (_roomManager.CanJoinRoomAsSpecatator(roomGuid, playerId))
                 {
-                    var room = _roomManager.GetRoom(roomId)!;
-                    await Clients.Caller.SendAsync("JoinedRoomAsSpectator", roomId);
-                    await Groups.AddToGroupAsync(Context.ConnectionId, roomId.ToString());
-                    await Clients.Group(roomId.ToString()).SendAsync("SpectatorJoined", room);
-                    await Groups.AddToGroupAsync(Context.ConnectionId, $"{roomId.ToString()}-spectator");
+                    await Clients.Caller.SendAsync("JoinedRoomAsSpectator", roomGuid);
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"{roomGuid}-spectator");
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, AllRoomGroupName);
                 }
                 else
                 {
@@ -64,16 +71,15 @@ public class RoomHub : Hub
                 }
                 break;
         }
-        
     }
 
-    public async Task LeaveRoom(int roomId)
+    public async Task LeaveRoom(string roomGuid)
     {
-        var room = _roomManager.GetRoom(roomId);
+        var room = _roomManager.GetRoom(roomGuid);
         if (room == null)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-            await Clients.Caller.SendAsync("LeaveRoom", roomId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomGuid);
+            await Clients.Caller.SendAsync("LeaveRoom", roomGuid);
             return;
         }
         var userId = GetCurrentUserId();
@@ -81,40 +87,44 @@ public class RoomHub : Hub
         if (room.WinnerId is not null)
         {
             await Clients.Groups(room.Id.ToString()).SendAsync("PlayerWon", room.WinnerId);
+            await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
+            //await Clients.Groups($"{room.Id.ToString()}-spectator").SendAsync("PlayerWon", room.WinnerId);
         }
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-        await Clients.Caller.SendAsync("LeaveRoom", roomId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomGuid);
+        //await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"{room.Id.ToString()}-spectator");
+        await Clients.Caller.SendAsync("LeaveRoom", roomGuid);
     }
 
-    public async Task FireInRoom(int roomId, int xOffset, int yOffset)
+    public async Task FireInRoom(string roomGuid, int xOffset, int yOffset)
     {
         var playerId = GetCurrentUserId();
-        if (_roomManager.CanPlayerFireInRoom(roomId, playerId))
+        if (_roomManager.CanPlayerFireInRoom(roomGuid, playerId))
         {
-            var room = _roomManager.GetRoom(roomId)!;
-            _roomManager.PlayerFireInRoom(playerId, room, xOffset, yOffset);
-            await Clients.Group(roomId.ToString()).SendAsync("Move",  playerId, xOffset, yOffset);
+            var room = _roomManager.GetRoom(roomGuid)!;
+            await _roomManager.PlayerFireInRoom(playerId, room, xOffset, yOffset);
+            await Clients.Group(roomGuid).SendAsync("Move",  playerId, xOffset, yOffset);
             if (room.WinnerId is not null)
             {
                 await Clients.Groups(room.Id.ToString()).SendAsync("PlayerWon", room.WinnerId);
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId.ToString());
-                await Clients.Caller.SendAsync("LeaveRoom", roomId);
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomGuid);
+                await Clients.Caller.SendAsync("LeaveRoom", roomGuid);
+                await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
             }
         }
     }
 
-    public async Task PlaceInRoom(int roomId, int[][][] shipOffsets)
+    public async Task PlaceInRoom(string roomGuid, int[][][] shipOffsets)
     {
         var playerId = GetCurrentUserId();
-        if (_roomManager.CanPlayerPlaceInRoom(playerId, roomId))
+        if (_roomManager.CanPlayerPlaceInRoom(playerId, roomGuid))
         {
-            var room = _roomManager.GetRoom(roomId)!;
+            var room = _roomManager.GetRoom(roomGuid)!;
             _roomManager.PlayerPlaceInRoom(room, playerId, shipOffsets);
-            await Clients.Group(roomId.ToString()).SendAsync("PlayerReady", playerId);
+            await Clients.Group(roomGuid).SendAsync("PlayerReady", playerId);
             if (room.BothPlayerReady)
             {
-                await Clients.Group(roomId.ToString()).SendAsync("GameOn", playerId);
-                // TODO release info to spectator room
+                await Clients.Group(roomGuid).SendAsync("GameOn", playerId);
+                await Clients.Group(AllRoomGroupName).SendAsync("RoomUpdate");
             }
         }
     }
@@ -129,9 +139,9 @@ public class RoomHub : Hub
         return 0L; // TODO
     }
     
-    private void TellHubGroupLapSeconds(int roomId, int lapSeconds)
+    private void TellHubGroupLapSeconds(string roomGuid, int lapSeconds)
     {
-        Clients.Group(roomId.ToString()).SendAsync("Timer", lapSeconds);
+        Clients.Group(roomGuid).SendAsync("Timer", lapSeconds);
     }
 
     public enum EJoinGroupMode

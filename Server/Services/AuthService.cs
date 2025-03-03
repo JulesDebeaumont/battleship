@@ -32,7 +32,7 @@ public class AuthService
             IdRes = noyauUser.personne.id_res,
             Email = noyauUser.personne.courriel,
         };
-        var user = await _userManager.FindByIdAsync(userProperties.Id.ToString());
+        var user = await _userManager.FindByEmailAsync(userProperties.Email);
         if (user == null)
         {
             await _userManager.CreateAsync(userProperties);
