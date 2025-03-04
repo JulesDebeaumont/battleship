@@ -15,9 +15,19 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/home',
-    name: 'home',
     beforeEnter: guardIsConnected,
-    component: () => import('pages/HomePage.vue')
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: () => import('pages/HomePage.vue')
+      },
+      {
+        path: 'room/:guid/:role',
+        name: 'room',
+        component: () => import('pages/RoomPage.vue')
+      }
+    ]
   },
 
   // Always leave this as last one,
