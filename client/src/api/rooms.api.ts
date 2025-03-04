@@ -6,11 +6,11 @@ export async function getAvailableRoomsAPI(): Promise<IRestrictedRoomDto[]> {
   return (await api.get(`${roomsUrl}`)).data
 }
 export async function createRoomAPI(): Promise<string> {
-  return (await api.post(`${roomsUrl}/new`)).data
+  return (await api.post(`${roomsUrl}/new`)).data.guid
 }
 export async function getRoomByGuidAPI(roomGuid: string): Promise<IRestrictedRoomDto> {
   return (await api.get(`${roomsUrl}/${roomGuid}`)).data
-} 
+}
 export async function placeInRoomAPI(roomGuid: string, shipOffsets: number[][][]): Promise<void> {
   return (
     await api.post(`${roomsUrl}/${roomGuid}/place`, {
@@ -18,33 +18,31 @@ export async function placeInRoomAPI(roomGuid: string, shipOffsets: number[][][]
     })
   ).data
 }
-export async function fireInRoomAPI(roomGuid: string, xOffset: number, yOffset: number): Promise<void> {
+export async function fireInRoomAPI(
+  roomGuid: string,
+  xOffset: number,
+  yOffset: number,
+): Promise<void> {
   return (
     await api.post(`${roomsUrl}/${roomGuid}/fire`, {
       xOffset,
-      yOffset
+      yOffset,
     })
   ).data
 }
 export async function leaveRoomAPI(roomGuid: string): Promise<void> {
-  return (
-    await api.post(`${roomsUrl}/${roomGuid}/leave`)
-  ).data
+  return (await api.post(`${roomsUrl}/${roomGuid}/leave`)).data
 }
 export async function JoinRoomAsOpponentAPI(roomGuid: string): Promise<void> {
-  return (
-    await api.post(`${roomsUrl}/${roomGuid}/join-as-opponent`,)
-  ).data
+  return (await api.post(`${roomsUrl}/${roomGuid}/join-as-opponent`)).data
 }
 export async function JoinRoomAsSpectatorAPI(roomGuid: string): Promise<void> {
-  return (
-    await api.post(`${roomsUrl}/${roomGuid}/join-as-spectator`)
-  ).data
+  return (await api.post(`${roomsUrl}/${roomGuid}/join-as-spectator`)).data
 }
 
 export interface IRestrictedRoomDto {
   guid: string
-  state: TRoomState
+  state: ERoomState
   playerOne: {
     id: number
     pseudo: string
@@ -58,4 +56,9 @@ export interface IRestrictedRoomDto {
   createdAt: Date
   startedAt: Date
 }
-export type TRoomState = 'playing' | 'pending' | 'archived' | 'placing'
+export enum ERoomState {
+  playing = 0,
+  pending = 1,
+  placing = 2,
+  archived = 3,
+}

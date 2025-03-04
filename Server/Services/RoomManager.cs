@@ -49,7 +49,7 @@ public class RoomManager
         var room = GetRoom(roomGuid);
         if (room == null) return false;
         if (room.State == ERoomState.Archived) return false;
-        if (room.PlayerTwoId != playerId || room.PlayerOneId != playerId) return false;
+        if (room.PlayerTwoId != playerId && room.PlayerOneId != playerId) return false;
         return true;
     }
     public bool CanJoinRoomAsOpponent(string roomGuid, long playerTwoId)
@@ -199,8 +199,8 @@ public class RoomAvailable
     public RoomSetup? PlayerTwoSetup { get; set; }
     public User? PlayerOne { get; set; }
     public User? PlayerTwo { get; set; }
-    public DateTime StartedAt { get; set; }
-    public DateTime EndedAt { get; set; }
+    public DateTime? StartedAt { get; set; }
+    public DateTime? EndedAt { get; set; }
     public int LapCount { get; set; } = 1;
     private bool PlayerOneIsReady => PlayerOneSetup?.Ships.Count > 0;
     private bool PlayerTwoIsReady => PlayerTwoSetup?.Ships.Count > 0;
@@ -397,7 +397,7 @@ public class RoomAvailable
         public ERoomState State { get; init; }
         public RoomPlayerDto? PlayerOne { get; init; }
         public RoomPlayerDto? PlayerTwo { get; init; }
-        public DateTime StartedAt { get; init; }
+        public DateTime? StartedAt { get; init; }
 
         public record RoomPlayerDto
         {

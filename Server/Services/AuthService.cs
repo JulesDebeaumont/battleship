@@ -31,6 +31,7 @@ public class AuthService
         {
             IdRes = noyauUser.personne.id_res,
             Email = noyauUser.personne.courriel,
+            UserName = noyauUser.personne.id_res
         };
         var user = await _userManager.FindByEmailAsync(userProperties.Email);
         if (user == null)

@@ -38,11 +38,12 @@ public class Room
     
     public User? PlayerTwo { get; set; }
 
-    public byte[] CreatedAt { get; set; } = [];
+    [Timestamp]
+    public byte[]? CreatedAt { get; set; }
     
-    public DateTime StartedAt { get; set; }
+    public DateTime? StartedAt { get; set; }
     
-    public DateTime EndedAt { get; set; }
+    public DateTime? EndedAt { get; set; }
 
     public int LapCount { get; set; } = 1;
 }

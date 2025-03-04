@@ -27,6 +27,4 @@ public class User : IdentityUser<long>
     public int RankLeaderboard { get; set; }
     
     public int Level { get; set; }
-    
-    public byte[] CreatedAt { get; set; }
 }
