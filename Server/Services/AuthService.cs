@@ -35,6 +35,7 @@ public class AuthService
         var user = await _userManager.FindByEmailAsync(userProperties.Email);
         if (user == null)
         {
+            userProperties.Pseudo = userProperties.IdRes;
             await _userManager.CreateAsync(userProperties);
             return userProperties;
         }

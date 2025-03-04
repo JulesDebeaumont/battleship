@@ -1,6 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Server.Services;
+
 namespace Server.Hubs;
 
-public class RoomListHub
+[Authorize]
+public class RoomListHub : Hub
 {
     
 }

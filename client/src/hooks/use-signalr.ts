@@ -15,8 +15,10 @@ export function useSignalR(
   const userStore = useUserStore()
 
   const isConnected = ref(false)
+  const isLoading = ref(false)
 
   async function connect() {
+    isLoading.value = true;
     const url = `${process.env.ENDPOINT_API}/ws/${hubName}`
     connection = new HubConnectionBuilder()
       .withUrl(url, { accessTokenFactory: () => userStore.token ?? '' })
@@ -38,6 +40,8 @@ export function useSignalR(
     } catch (error) {
       console.error(error)
       isConnected.value = false
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -62,6 +66,7 @@ export function useSignalR(
     disconnect,
     invokeCommand,
     connection,
-    isConnected: isConnected.value,
+    isConnected,
+    isLoading
   }
 }
