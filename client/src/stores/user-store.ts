@@ -2,7 +2,6 @@ import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { Cookies } from 'quasar'
 import { fakeLoginAPI, loginAPI } from 'src/api/login.api'
-import { useRoute } from 'vue-router'
 
 interface IUser {
   id: number
@@ -10,7 +9,8 @@ interface IUser {
 }
 interface IParsedToken {
   exp: number
-  user: IUser
+  id: number
+  pseudo: string
 }
 const COOKIE_TOKEN = 'SpaceShipBattle-AccessToken'
 const COOKIE_ROUTE_ENTERING = 'SpaceShipBattle-RequestedRoute'
@@ -19,6 +19,7 @@ const SAME_SITE = 'Lax'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
+    hasEnteredApp: false,
     user: <IUser | null>null,
     token: <string | null>null,
     tokenExpiration: <number | null>null,
@@ -32,11 +33,14 @@ export const useUserStore = defineStore('user', {
       if (new Date() > new Date(this.tokenExpiration * 1000)) return true
       return false
     },
+    getCookieRouteValue(): string | null {
+      return Cookies.get(COOKIE_ROUTE_ENTERING)
+    }
   },
   actions: {
-    async trySetupTokenFromCookies() {
+    trySetupTokenFromCookies() {
       if (Cookies.has(COOKIE_TOKEN)) {
-        await this.authenticate(Cookies.get(COOKIE_TOKEN))
+        this.authenticate(Cookies.get(COOKIE_TOKEN))
       }
     },
     clear() {
@@ -47,29 +51,35 @@ export const useUserStore = defineStore('user', {
     askCasTicket() {
       window.location.href = process.env.CAS_URL + window.location.origin
     },
-    getInitialPathRequested() {
-      const route = useRoute()
-      Cookies.set(COOKIE_ROUTE_ENTERING, route.fullPath, { sameSite: SAME_SITE, path: COOKIE_PATH })
+    getInitialPathRequested(fullPath: string) {
+      Cookies.set(COOKIE_ROUTE_ENTERING, fullPath, { sameSite: SAME_SITE, path: COOKIE_PATH })
     },
     async askServerToken(casTicket: string) {
       try {
         const token = (await loginAPI(casTicket)).token;
-        await this.authenticate(token);
+        this.authenticate(token);
       } catch (error) {
         console.log(error)
       }
     },
     async fakeAuth(idRes: string) {
       const jwt = (await fakeLoginAPI(idRes)).token
-      await this.authenticate(jwt);
+      this.authenticate(jwt);
     },
-    async authenticate(token: string) {
+    authenticate(token: string) {
       this.token = token
       const parsedToken = jwtDecode<IParsedToken>(token)
-      this.user = parsedToken.user
+      this.user = {
+        id: parsedToken.id,
+        pseudo: parsedToken.pseudo
+      }
       this.tokenExpiration = parsedToken.exp
       Cookies.set(COOKIE_TOKEN, token, { sameSite: SAME_SITE, path: COOKIE_PATH })
-      await this.router.push(Cookies.get(COOKIE_ROUTE_ENTERING));
     },
+    logout() {
+      this.$reset()
+      Cookies.remove(COOKIE_TOKEN, { path: COOKIE_PATH })
+      Cookies.remove(COOKIE_ROUTE_ENTERING, { path: COOKIE_PATH })
+    }
   },
 })

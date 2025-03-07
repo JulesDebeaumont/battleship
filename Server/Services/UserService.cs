@@ -23,4 +23,41 @@ public class UserService
         user.Pseudo = pseudo;
         await _userManager.UpdateAsync(user);
     }
+
+    public async Task<UserProfileDto?> GetUserProfile(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return null;
+        }
+        var userProfil = new UserProfileDto
+        {
+            Id = user.Id,
+            IdRes = user.IdRes,
+            Pseudo = user.Pseudo,
+            GameCount = user.GameCount,
+            WinCount = user.WinCount,
+            LooseCount = user.LooseCount,
+            ShipDestroyed = user.ShipDestroyed,
+            LapPlayed = user.LapPlayed,
+            RankLeaderboard = user.RankLeaderboard,
+            Experience = user.Experience
+        };
+        return userProfil;
+    }
+
+    public record UserProfileDto
+    {
+        public long Id { get; set; }
+        public required string IdRes { get; set; }
+        public string Pseudo { get; set; } = string.Empty;
+        public int GameCount { get; set; }
+        public int WinCount { get; set; }
+        public int LooseCount { get; set; }
+        public int ShipDestroyed { get; set; }
+        public int LapPlayed { get; set; }
+        public int RankLeaderboard { get; set; }
+        public int Experience { get; set; }
+    }
 }

@@ -40,8 +40,6 @@ public class AuthService
             await _userManager.CreateAsync(userProperties);
             return userProperties;
         }
-        userProperties.Id = user.Id;
-        await _userManager.UpdateAsync(userProperties);
         return user;
     }
 

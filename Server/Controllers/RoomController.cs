@@ -37,44 +37,52 @@ public class RoomController : ControllerBase
         {
             return BadRequest("Too much rooms already");
         }
-        var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapSeconds);
+        var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapTick, TellHubGroupLapTimeout);
         await AlertRoomListHubUpdate();
         return Ok(new { guid = room.Guid });
     }
     
     [HttpGet]
-    [Route("{guid}")]
-    public ActionResult GetRoomByGuid(string guid)
+    [Route("{guid}/as-opponent")]
+    public ActionResult GetRoomAsOpponentByGuid(string guid)
     {
         var userId = GetCurrentUserId();
-        if (_roomManager.CanSeeRoomAsOpponent(guid, userId))
+        if (!_roomManager.CanSeeRoomAsOpponent(guid, userId))
         {
-            var room = _roomManager.GetRoom(guid)!;
-            return Ok(room.ToOpponentProfilData(userId));
+            return Unauthorized();
         }
-        if (_roomManager.CanSeeRoomAsSpectator(guid, userId))
-        {
-            var room = _roomManager.GetRoom(guid)!;
-            return Ok(room.ToSpectatorProfilData());
-        }
-        return BadRequest();
+        var room = _roomManager.GetRoom(guid)!;
+        return Ok(room.ToOpponentProfilData(userId));
     }
-
+    
+    [HttpGet]
+    [Route("{guid}/as-spectator")]
+    public ActionResult GetRoomAsSpectatorByGuid(string guid)
+    {
+        var userId = GetCurrentUserId();
+        if (!_roomManager.CanSeeRoomAsSpectator(guid, userId))
+        {
+            return Unauthorized();
+        }
+        var room = _roomManager.GetRoom(guid)!;
+        return Ok(room.ToSpectatorProfilData());
+    }
+    
     [HttpPost]
     [Route("{guid}/place")]
     public async Task<ActionResult> PlaceInRoom(string guid, [FromBody]PlaceInRoomDto dto)
     {
         var playerId = GetCurrentUserId();
-        if (!_roomManager.CanPlayerPlaceInRoom(playerId, guid))
+        if (!_roomManager.CanPlayerPlaceInRoom(playerId, guid, dto.ShipsOffsets))
         {
             return BadRequest();
         }
         var room = _roomManager.GetRoom(guid)!;
-        _roomManager.PlayerPlaceInRoom(room, playerId, dto.ShipOffsets);
+        _roomManager.PlayerPlaceInRoom(room, playerId, dto.ShipsOffsets);
         await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("PlayerReady", playerId);
         if (room.BothPlayerReady)
         {
-            await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("GameOn", playerId);
+            await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("GameOn");
             await AlertRoomListHubUpdate();
         }
         return Ok();
@@ -90,14 +98,14 @@ public class RoomController : ControllerBase
             BadRequest();
         }
         var room = _roomManager.GetRoom(guid)!;
-        await _roomManager.PlayerFireInRoom(playerId, room, dto.XOffset, dto.YOffset);
-        await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("Move",  playerId, dto.XOffset, dto.YOffset);
+        var hit = await _roomManager.PlayerFireInRoom(playerId, room, dto.XOffset, dto.YOffset);
+        await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("Move", playerId, dto.XOffset, dto.YOffset, hit);
         if (room.WinnerId is not null)
         {
             await _roomGoingOnHub.Clients.Groups(room.Guid).SendAsync("PlayerWon", room.WinnerId);
             await AlertRoomListHubUpdate();
         }
-        return Ok();
+        return Ok(new { hit });
     }
     
     [HttpPost]
@@ -110,13 +118,12 @@ public class RoomController : ControllerBase
             return Ok();
         }
         var userId = GetCurrentUserId();
-        _roomManager.RemoveUserFromRoom(userId, room);
+        await _roomManager.RemoveUserFromRoom(userId, room);
         if (room.WinnerId is not null)
         {
             await _roomGoingOnHub.Clients.Groups(room.Guid).SendAsync("PlayerWon", room.WinnerId);
-            await AlertRoomListHubUpdate();
         }
-
+        await AlertRoomListHubUpdate();
         return Ok();
     }
 
@@ -128,10 +135,10 @@ public class RoomController : ControllerBase
         var room = _roomManager.GetRoom(guid)!;
         if (!_roomManager.CanJoinRoomAsOpponent(guid, playerId))
         {
-            return BadRequest();
+            return Unauthorized();
         }
         await _roomManager.JoinRoomAsOpponent(playerId, room);
-        await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("OpponentJoined", room);
+        await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("OpponentJoined", room.ToOpponentProfilData(playerId), playerId);
         await AlertRoomListHubUpdate();
         return Ok();
     }
@@ -154,14 +161,19 @@ public class RoomController : ControllerBase
         await _roomListHub.Clients.All.SendAsync("RoomListUpdated");
     }
     
-    private async Task TellHubGroupLapSeconds(string roomGuid, int lapSeconds)
+    private async Task TellHubGroupLapTick(string roomGuid, int lapSeconds)
     {
-        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("Timer", lapSeconds);
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("TimerTick", lapSeconds);
+    }
+
+    private async Task TellHubGroupLapTimeout(string roomGuid, int lapCount)
+    {
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("TimerTimeout", lapCount);
     }
 
     public record PlaceInRoomDto
     {
-        public required int[][][] ShipOffsets { get; set; }
+        public required ShipOffsetsDto[] ShipsOffsets { get; set; }
     }
 
     public record FireInRoomDto

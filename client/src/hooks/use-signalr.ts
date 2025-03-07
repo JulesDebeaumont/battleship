@@ -1,16 +1,15 @@
-import type { HubConnection } from '@microsoft/signalr'
 import { HubConnectionBuilder } from '@microsoft/signalr'
 import { useUserStore } from 'src/stores/user-store'
 import { ref } from 'vue'
 
 export function useSignalR(
   hubName: string,
-  onConnect: () => Promise<void> | void,
-  onDisconnect: () => Promise<void>  | void,
-  onReceiveMessage: (message: unknown) => Promise<void>  | void,
-  onStopMessage: (message: unknown) => Promise<void>  | void,
 ) {
-  let connection: HubConnection | null = null
+  const url = `${process.env.ENDPOINT_API}/ws/${hubName}`
+  const connection = new HubConnectionBuilder()
+    .withUrl(url, { accessTokenFactory: () => userStore.token ?? '' })
+    .withAutomaticReconnect()
+    .build()
 
   const userStore = useUserStore()
 
@@ -18,24 +17,10 @@ export function useSignalR(
   const isLoading = ref(false)
 
   async function connect() {
-    isLoading.value = true;
-    const url = `${process.env.ENDPOINT_API}/ws/${hubName}`
-    connection = new HubConnectionBuilder()
-      .withUrl(url, { accessTokenFactory: () => userStore.token ?? '' })
-      .withAutomaticReconnect()
-      .build()
-
-    connection.on('ReceiveMessage', async (message) => {
-      await onReceiveMessage(message)
-    })
-
-    connection.on('StopMessage', async (message) => {
-      await onStopMessage(message)
-    })
+    isLoading.value = true
 
     try {
       await connection.start()
-      await onConnect()
       isConnected.value = true
     } catch (error) {
       console.error(error)
@@ -49,7 +34,6 @@ export function useSignalR(
     if (connection === null) return
     try {
       await connection.stop()
-      await onDisconnect()
       isConnected.value = false
     } catch (error) {
       console.error(error)
@@ -57,7 +41,7 @@ export function useSignalR(
   }
 
   async function invokeCommand(commandName: string, ...args: unknown[]) {
-    if (connection === null) return;
+    if (connection === null) return
     await connection.invoke(commandName, ...args)
   }
 
@@ -67,6 +51,6 @@ export function useSignalR(
     invokeCommand,
     connection,
     isConnected,
-    isLoading
+    isLoading,
   }
 }

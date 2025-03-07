@@ -1,32 +1,49 @@
 import type { RouteRecordRaw } from 'vue-router';
-import { guardIsConnected, guardIsDisconnected } from './guards';
+import { guardEnterApp, guardIsConnected, guardIsDisconnected } from './guards';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'root',
-    redirect: { name: 'home'}
-  },
-  {
-    path: '/login',
-    name: 'login',
-    beforeEnter: guardIsDisconnected,
-    component: () => import('pages/LoginPage.vue')
-  },
-  {
-    path: '/home',
-    beforeEnter: guardIsConnected,
+    beforeEnter: guardEnterApp,
     children: [
       {
-        path: '',
-        name: 'home',
-        component: () => import('pages/HomePage.vue')
+        path: 'login',
+        name: 'login',
+        beforeEnter: guardIsDisconnected,
+        component: () => import('pages/LoginPage.vue')
       },
       {
-        path: 'room/:guid/:role',
-        name: 'room',
-        component: () => import('pages/RoomPage.vue')
-      }
+        path: 'home',
+        beforeEnter: guardIsConnected,
+        children: [
+          {
+            path: '',
+            name: 'home',
+            component: () => import('pages/HomePage.vue')
+          },
+          {
+            path: 'room/:guid/opponent',
+            name: 'room-as-opponent',
+            component: () => import('pages/RoomOpponentPage.vue')
+          },
+          {
+            path: 'room/:guid/spectator',
+            name: 'room-as-spectator',
+            component: () => import('pages/RoomSpectatorPage.vue')
+          },
+          {
+            path: 'me',
+            name: 'me',
+            component: () => import('pages/UserProfilPage.vue')
+          },
+          {
+            path: 'changelog',
+            name: 'changelog',
+            component: () => import('pages/ChangeLogPage.vue')
+          }
+        ]
+      },
     ]
   },
 
