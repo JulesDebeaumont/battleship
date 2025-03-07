@@ -1,1 +1,78 @@
-// app global css in SCSS form
+.gameboard-box {
+    height: 60px;
+    width: 60px;
+    background-color: #999;
+    border: 1px black solid;
+    display: flex;
+}
+.gameboard-box-indicator {
+    background-color: #686868;
+    color: white;
+}
+.gameboard-box-interactive {
+    background-color: #ddd;
+    transition: all 0.1s;
+}
+.gameboard-box-interactive:hover {
+    background-color: aqua;
+}
+.gameboard-box-hit {
+    height: 100%;
+    width: 100%;
+    background-image: url('/images/hit.png');
+    background-size: cover;
+    background-position: center;
+    z-index: 5;
+}
+.gameboard-box-hit-ship {
+    height: 100%;
+    width: 100%;
+    background-image: url('/images/hit-ship.png');
+    background-size: cover;
+    background-position: center;
+    z-index: 5;
+}
+.ship-toolbox {
+    background-size: contain;
+}
+.ship-toolbox-disabled {
+    filter: grayscale(80%);
+}
+.ship {
+    overflow: visible;
+    background-size: contain;
+    position: absolute;
+    z-index: 2;
+    height: 100%;
+    width: 100%;
+}
+.ship1-horizontal {
+    background-color: red;
+    height: 60px;
+    width: 300px;
+}
+.ship1-vertical {
+    background-color: red;
+    height: 300px;
+    width: 60px;
+}
+.ship2-horizontal {
+    background-color: blue;
+    height: 60px;
+    width: 240px;
+}
+.ship2-vertical {
+    background-color: blue;
+    height: 240px;
+    width: 60px;
+}
+.ship3-horizontal {
+    background-color: green;
+    height: 60px;
+    width: 180px;
+}
+.ship3-vertical {
+    background-color: green;
+    height: 180px;
+    width: 60px;
+}
