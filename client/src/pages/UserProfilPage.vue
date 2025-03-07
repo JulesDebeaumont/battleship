@@ -2,7 +2,8 @@
 import { useQuasar } from 'quasar';
 import type { IUserProfilDto } from 'src/api/users.api';
 import { getProfileAPI, updatePseudoAPI } from 'src/api/users.api';
-import { buttonRegularBind, inputRegularBind } from 'src/utils/binds';
+import SpaceButton from 'src/components/general/SpaceButton.vue';
+import { inputRegularBind } from 'src/utils/binds';
 import { isRequiredRule, maxLengthRule, minLengthRule } from 'src/utils/input-rules';
 import { onMounted, ref } from 'vue';
 
@@ -37,8 +38,7 @@ onMounted(async () => {
         <div class="flex row" v-if="userProfil">
             <q-input v-model="pseudoInput" v-bind="inputRegularBind"
                 :rules="[isRequiredRule, maxLengthRule(100), minLengthRule(3)]" />
-            <q-btn @click="changePseudo" :disable="pseudoInput === userProfil.pseudo" label="Modifier pseudo"
-                v-bind="buttonRegularBind" />
+            <SpaceButton @click="changePseudo" :disable="pseudoInput === userProfil.pseudo" label="Modifier pseudo" />
         </div>
     </div>
 </template>

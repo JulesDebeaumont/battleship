@@ -65,40 +65,42 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div>
-    {{ roomStore.room }}
-    <q-dialog v-model="showDialogWinner" @hide="closeWinnerDialogAndExit" auto-close>
-      <q-card class="q-pa-lg">
-        <q-card-section>
-          {{ roomStore.getWinnerString }}
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+  <q-page>
+    <div class="page-container">
+      {{ roomStore.room }}
+      <q-dialog v-model="showDialogWinner" @hide="closeWinnerDialogAndExit" auto-close>
+        <q-card class="q-pa-lg">
+          <q-card-section>
+            {{ roomStore.getWinnerString }}
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-    <div v-if="roomStore.isRoomPending">
-      <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div>En attente d'un autre joueur..</div>
-      </transition>
-    </div>
+      <div v-if="roomStore.isRoomPending">
+        <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+          <div class="text-white">En attente d'un autre joueur..</div>
+        </transition>
+      </div>
 
-    <div v-if="roomStore.isRoomPlacing" class="flex column">
-      <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <GameBoardPlacement />
-      </transition>
-    </div>
+      <div v-if="roomStore.isRoomPlacing" class="flex column">
+        <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+          <GameBoardPlacement />
+        </transition>
+      </div>
 
-    <div v-if="roomStore.isRoomPlaying">
-      <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div class="flex column">
-          <h6>Chrono : {{ timer }}</h6>
-          <div class="flex row">
-            <Component :is="getComponentByPlacement('left')" />
-            <div class="q-px-xl">_____</div>
-            <Component :is="getComponentByPlacement('right')" />
+      <div v-if="roomStore.isRoomPlaying">
+        <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+          <div class="flex column">
+            <h6>Chrono : {{ timer }}</h6>
+            <div class="flex row">
+              <Component :is="getComponentByPlacement('left')" />
+              <div class="q-px-xl">_____</div>
+              <Component :is="getComponentByPlacement('right')" />
+            </div>
           </div>
-        </div>
-      </transition>
-    </div>
+        </transition>
+      </div>
 
-  </div>
+    </div>
+  </q-page>
 </template>
