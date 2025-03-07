@@ -14,10 +14,12 @@ async function logout() {
 
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <div class="layout-bg"></div>
+    <div class="layout-layer-bg"></div>
+    <q-header class="layout-header">
       <q-toolbar>
         <q-toolbar-title>
-          Quasar App
+          Space Battle Ship
         </q-toolbar-title>
 
         <q-space />
@@ -77,3 +79,30 @@ async function logout() {
     </q-page-container>
   </q-layout>
 </template>
+
+<style lang="scss">
+.layout-header {
+  background-color: rgba(0, 0, 0, 0);
+}
+.layout-bg {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background-size: 120;
+  background-position: right 40%;
+  background-image: url('/images/bg-space.jpg');
+}
+.layout-layer-bg {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background-repeat: repeat;
+  background-image: url('/images/overlay-pattern.png');
+}
+</style>

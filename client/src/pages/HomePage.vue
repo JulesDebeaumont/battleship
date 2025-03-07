@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { createRoomAPI, ERoomState, getAvailableRoomsAPI, JoinRoomAsOpponentAPI, type IRoomFromListDto } from 'src/api/rooms.api'
+import SpaceButton from 'src/components/general/SpaceButton.vue'
 import { useSignalR } from 'src/hooks/use-signalr'
 import { useUserStore } from 'src/stores/user-store'
 import { onMounted, onUnmounted, ref } from 'vue'
@@ -73,16 +74,19 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <q-page class="column q-px-md q-py-sm">
-    <q-list>
-      <q-item v-for="room in allRooms" :key="room.guid">
-        <pre>{{ room }}</pre>
-        <q-btn label="Specateur" v-if="canJoinRoomAsSpectator(room)"
-          :to="{ name: 'room-as-spectator', params: { guid: room.guid } }" />
-        <q-btn label="Affronter" v-if="canSeeRoomAsOpponent(room) || canJoinRoomAsOpponent(room)"
-          @click="joinRoomAsOpponent(room)" />
-      </q-item>
-    </q-list>
-    <q-btn @click="createRoom" label="Create room" />
+  <q-page>
+    <div class="page-container">
+      <SpaceButton @click="createRoom" label="Create room" />
+
+      <q-list class="q-py-xl">
+        <q-item v-for="room in allRooms" :key="room.guid">
+          <pre>{{ room }}</pre>
+          <SpaceButton label="Specateur" v-if="canJoinRoomAsSpectator(room)"
+            :to="{ name: 'room-as-spectator', params: { guid: room.guid } }" />
+          <SpaceButton label="Affronter" v-if="canSeeRoomAsOpponent(room) || canJoinRoomAsOpponent(room)"
+            @click="joinRoomAsOpponent(room)" />
+        </q-item>
+      </q-list>
+    </div>
   </q-page>
 </template>
