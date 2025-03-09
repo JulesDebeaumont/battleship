@@ -18,19 +18,19 @@ async function logout() {
     <div class="layout-layer-bg"></div>
     <q-header class="layout-header">
       <q-toolbar>
-        <q-toolbar-title>
-          Space Battle Ship
-        </q-toolbar-title>
+        <img src="/images/logo.png"  style="height: 30px;" />
 
         <q-space />
 
         <div class="q-gutter-sm row items-center no-wrap">
           <q-btn-dropdown :disable="!userStore.isConnected" round flat>
             <template v-slot:label>
-              <q-avatar size="26px" icon="person" color="secondary" />
+              <q-avatar size="26px" color="secondary">
+                <img src="/images/avatar.png">
+              </q-avatar>
             </template>
 
-            <q-list>
+            <q-list class="space-list">
               <q-item>
                 <q-item-section>
                   {{ userStore.user!.pseudo }}
@@ -84,6 +84,7 @@ async function logout() {
 .layout-header {
   background-color: rgba(0, 0, 0, 0);
 }
+
 .layout-bg {
   position: absolute;
   height: 100%;
@@ -95,6 +96,7 @@ async function logout() {
   background-position: right 40%;
   background-image: url('/images/bg-space.jpg');
 }
+
 .layout-layer-bg {
   position: absolute;
   height: 100%;
