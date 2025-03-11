@@ -1,31 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import HologramText from './HologramText.vue'
+import SpaceContainer from './SpaceContainer.vue'
 
-const propsComponent = defineProps<{
+const propsComponent = withDefaults(
+  defineProps<{
     label: string
     disabled?: boolean
-}>()
-const propsEmits = defineEmits<{
-    (e: 'click'): Promise<void> | void
-}>()
-
-const classesButton = computed(() => {
-    let classes = 'space-btn'
-    if (propsComponent.disabled) classes += ' space-btn-disabled'
-    if (!propsComponent.disabled) classes += ' hologram'
-    return classes
-})
-const classesScanLine = computed(() => {
-    let classes = ''
-    if (propsComponent.disabled) classes += ' scan-line-disabled'
-    if (!propsComponent.disabled) classes += ' scan-line'
-    return classes
-})
+    color?: 'primary' | 'secondary'
+    size?: 'sm' | 'md'
+  }>(),
+  {
+    label: '',
+    disabled: false,
+    color: 'primary',
+    size: 'md',
+  },
+)
 </script>
 
 <template>
-    <button :class="classesButton" @click="propsEmits('click')">
-        <span :data-text="propsComponent.label">{{ propsComponent.label }}</span>
-        <div :class="classesScanLine"></div>
-    </button>
+  <SpaceContainer
+    :color="propsComponent.color"
+    :disabled="propsComponent.disabled"
+    :size="propsComponent.size"
+    highlitable="hover"
+    scan-line="hover"
+    class="flex flex-center"
+  >
+    <HologramText :color="propsComponent.color" :text="propsComponent.label" />
+  </SpaceContainer>
 </template>

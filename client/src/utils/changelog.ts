@@ -7,7 +7,6 @@ export interface ILogComponentInfo {
     list: {
       text: string
       icon?: 'alert' | 'new'
-      priority?: number
     }[]
   }[]
 }
@@ -15,7 +14,17 @@ export interface ILogComponentInfo {
 export const allLogs: ILogComponentInfo[] = [
   {
     title: 'Mise en production',
-    date: '???',
-    cores: [],
+    date: '10/03/2025',
+    cores: [
+      {
+        type: 'changes',
+        list: [
+          {
+            text: 'Test',
+            icon: 'new',
+          },
+        ],
+      },
+    ],
   },
 ]

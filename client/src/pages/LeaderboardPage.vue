@@ -1,0 +1,1 @@
+<template>Bonjour</template>
