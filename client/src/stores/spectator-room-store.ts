@@ -29,7 +29,7 @@ interface IRoomOpponentSetup {
   firedOffsets: IOffsetsWithHit[]
 }
 
-export const useRoomOpponentStore = defineStore('room-opponent', {
+export const useRoomSpectatorStore = defineStore('room-spectator', {
   state: () => ({
     hub: useSignalR('rooms-on'),
     userStore: useUserStore(),
@@ -106,14 +106,12 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         this.room = room
         if (playerId !== this.userStore.user!.id) {
           Notify.create({
-            color: 'positive',
             message: 'Un adversaire à rejoint la partie',
           })
         }
         if (this.room.state === ERoomState.placing) {
           Notify.create({
-            color: 'negative',
-            message: 'Placer vos vaisseaux !',
+            message: 'Placer vos bateaux !',
           })
         }
       })
@@ -130,7 +128,6 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         }
         if (this.userStore.user?.id === playerId) return
         Notify.create({
-          color: 'positive',
           message: `${opponentPseudo} est prêt !`,
         })
       })
@@ -138,8 +135,7 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         if (this.room === null) return
         this.room.state = ERoomState.playing
         Notify.create({
-          color: 'positive',
-          message: 'La bataille commence !',
+          message: 'Game on bitch',
         })
       })
       this.hub.connection.on(
@@ -157,12 +153,9 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         this.roomTimer = timer
       })
       this.hub.connection.on('TimerTimeout', (newLapCount: number) => {
-        if (this.isCurrentUserTurn) {
-          Notify.create({
-            type: 'negative',
-            message: 'Temps écoulé pour ce tour',
-          })
-        }
+        Notify.create({
+          message: 'Temps écoulé pour ce tour',
+        })
         this.lap = newLapCount
       })
       this.hub.connection.on('PlayerWon', (playerId: number) => {

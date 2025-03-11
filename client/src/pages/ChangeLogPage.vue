@@ -10,15 +10,16 @@ const router = useRouter()
 
 <template>
   <div class="flex items-center column">
-    <SpaceButton size="sm" label="Retour" @click="router.push({ name: 'me' })" />
+    <SpaceButton size="sm" label="Retour" color="secondary" @click="router.push({ name: 'me' })" />
     <SpaceContainer
       v-for="log in allLogs"
       :key="log.date"
       :disabled="false"
       highlitable="hover"
       scan-line="hover"
+      color="secondary"
     >
-      <HologramText :text="`${log.title} ${log.date}`" class="text-h4" />
+      <HologramText :text="`${log.title} ${log.date}`" color="secondary" class="text-h4" />
 
       <div class="q-py-md">
         <div v-for="core in log.cores" :key="core.type">

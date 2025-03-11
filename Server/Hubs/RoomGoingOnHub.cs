@@ -36,7 +36,7 @@ public class RoomGoingOnHub : Hub
 
     private long GetCurrentUserId()
     {
-        return long.Parse(Context!.User!.Identity!.Name!);
+        return long.Parse(Context.User!.Identity!.Name!);
     }
     
 }

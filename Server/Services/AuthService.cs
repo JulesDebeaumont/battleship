@@ -37,6 +37,7 @@ public class AuthService
         if (user == null)
         {
             userProperties.Pseudo = userProperties.IdRes;
+            userProperties.CalculateExperienceData();
             await _userManager.CreateAsync(userProperties);
             return userProperties;
         }

@@ -1,11 +1,13 @@
-import { defineBoot } from '#q-app/wrappers';
-import axios, { type AxiosInstance } from 'axios';
-import { useUserStore } from 'src/stores/user-store';
+import { defineBoot } from '#q-app/wrappers'
+import axios, { type AxiosInstance } from 'axios'
+import { Notify } from 'quasar'
+import { useUserStore } from 'src/stores/user-store'
+import { useRouter } from 'vue-router'
 
 declare module 'vue' {
   interface ComponentCustomProperties {
-    $axios: AxiosInstance;
-    $api: AxiosInstance;
+    $axios: AxiosInstance
+    $api: AxiosInstance
   }
 }
 
@@ -15,23 +17,42 @@ declare module 'vue' {
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const api = axios.create({ baseURL: process.env.ENDPOINT_API ?? '' });
+const api = axios.create({ baseURL: process.env.ENDPOINT_API ?? '' })
 
 export default defineBoot(() => {
-  const userStore = useUserStore();
+  const userStore = useUserStore()
 
-  api.interceptors.request.use(
-    (config) => {
-      if (userStore.isConnected) {
-        if (userStore.istokenExpired) {
-          userStore.clear();
-          return config;
-        }
-        config.headers.Authorization = `Bearer ${userStore.token}`;
+  api.interceptors.request.use((config) => {
+    if (userStore.isConnected) {
+      if (userStore.istokenExpired) {
+        userStore.clear()
+        return config
       }
-      return config;
+      config.headers.Authorization = `Bearer ${userStore.token}`
     }
-  )
+    return config
+  })
+
+  api.interceptors.response.use(
+    (response) => {
+      return response
+    },
+    async (error) => {
+    if (error.status === 401 || error.status === 403) {
+      const router = useRouter()
+      userStore.logout()
+      await router.push({ name: 'login' })
+      return error
+    }
+    if (error.status === 400) {
+      return error
+    }
+    Notify.create({
+      type: 'negative',
+      message: 'Une erreur est survenue',
+    })
+    return error
+  })
 })
 
-export { api };
+export { api }

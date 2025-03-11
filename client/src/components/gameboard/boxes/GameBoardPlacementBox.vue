@@ -29,8 +29,7 @@ watch(() => placementStore.hasSubmitPlacement, (newValue) => {
 </script>
 
 <template>
-    <div class="gameboard-box">
-        <div style="position: absolute;">{{ propsComponents.xOffset }} / {{ propsComponents.yOffset }}</div>
+    <div class="gameboard-box gameboard-box-placement">
         <template v-if="!isFrozen">
             <draggableComponent @add="onDrop" :list="listPlacement"
                 :group="{ name: `gameboard-boxes-${propsComponents.xOffset}-${propsComponents.yOffset}`, put: true }"
@@ -47,3 +46,13 @@ watch(() => placementStore.hasSubmitPlacement, (newValue) => {
         </template>
     </div>
 </template>
+
+<style>
+.gameboard-box-placement {
+    background-color: #5a8f8fB0;
+    transition: all 0.1s;
+}
+.gameboard-box-placement:hover {
+    background-color: #5a8f8fe7;
+}
+</style>

@@ -4,10 +4,11 @@ import { useQuasar } from 'quasar'
 import GameBoardOpponent from 'src/components/gameboard/GameBoardOpponent.vue'
 import GameBoardPlacement from 'src/components/gameboard/GameBoardPlacement.vue'
 import GameBoardPlayer from 'src/components/gameboard/GameBoardPlayer.vue'
+import SpaceCard from 'src/components/general/SpaceCard.vue'
 import WaitingButton from 'src/components/general/WaitingButton.vue'
 import { useRoomOpponentStore } from 'src/stores/room-opponent-store'
 import type { Component } from 'vue'
-import { h, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -47,6 +48,12 @@ async function closeWinnerDialogAndExit() {
   await router.push({ name: 'home' })
 }
 
+const labelTimerButton = computed(() => {
+  const invertedTimer = 14 - timer.value
+  if (roomStore.isCurrentUserTurn) return `Temps restant : ${invertedTimer > 0 ? invertedTimer : 0}`
+  return "Votre adversaire joue.."
+})
+
 onMounted(async () => {
   try {
     await roomStore.register(roomGuid)
@@ -74,11 +81,9 @@ onUnmounted(async () => {
 <template>
   <div class="flex column">
     <q-dialog v-model="showDialogWinner" @hide="closeWinnerDialogAndExit" auto-close>
-      <q-card class="q-pa-lg">
-        <q-card-section>
-          {{ roomStore.getWinnerString }}
-        </q-card-section>
-      </q-card>
+      <SpaceCard>
+          <div class="flex flex-center">{{ roomStore.getWinnerString }}</div>
+      </SpaceCard>
     </q-dialog>
 
     <div v-if="roomStore.isRoomPending">
@@ -95,11 +100,11 @@ onUnmounted(async () => {
 
     <div v-if="roomStore.isRoomPlaying">
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
-        <div class="flex column">
-          <h6>Chrono : {{ timer }}</h6>
-          <div class="flex row">
-            <Component :is="getComponentByPlacement('left')" />
-            <div class="q-px-xl">_____</div>
+        <div class="flex column flex-center">
+          <WaitingButton :label="labelTimerButton" />
+          <div class="flex row flex-center q-gutter-xl" style="width: 90vw;">
+            <Component :is="getComponentByPlacement('left')"  />
+            <q-space class="q-px-lg" />
             <Component :is="getComponentByPlacement('right')" />
           </div>
         </div>

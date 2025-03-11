@@ -12,9 +12,10 @@ const propsComponents = defineProps<{
 
 <style>
 .gameboard-box-indicator {
-  background-color: #0787e349;
+  background-color: #06caca69;
   color: white;
   font-size: larger;
   font-weight: 600;
+  backdrop-filter: blur(2px);
 }
 </style>

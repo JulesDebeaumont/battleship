@@ -34,7 +34,7 @@ export async function fireInRoomAPI(
 export async function leaveRoomAPI(roomGuid: string): Promise<void> {
   return (await api.post(`${roomsUrl}/${roomGuid}/leave`)).data
 }
-export async function JoinRoomAsOpponentAPI(roomGuid: string): Promise<void> {
+export async function joinRoomAsOpponentAPI(roomGuid: string): Promise<void> {
   return (await api.post(`${roomsUrl}/${roomGuid}/join-as-opponent`)).data
 }
 export async function JoinRoomAsSpectatorAPI(roomGuid: string): Promise<void> {

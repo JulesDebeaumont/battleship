@@ -25,9 +25,13 @@ public class User : IdentityUser<long>
     
     public int LapPlayed { get; set; }
     
-    public int RankLeaderboard { get; set; }
+    public int TotalExperience { get; set; }
     
-    public int Experience { get; set; }
+    public int Level { get; set; }
+    
+    public int ExperienceScopeNextLevel { get; set; }
+    
+    public int ExperienceRequiredNextLevel { get; set; }
 
     public void RegisterGameState(RoomAvailable room)
     {
@@ -41,11 +45,38 @@ public class User : IdentityUser<long>
         {
             LooseCount++;
         }
-        coefficient += room.LapCount;
-        Experience += coefficient * 10;
+        coefficient *= (int)Math.Round(room.LapCount * 0.5);
+        TotalExperience += coefficient * 3;
         GameCount++;
-        LapPlayed += (int)Math.Round((double)room.LapCount / 2);
+        LapPlayed += Id == room.PlayerOneId ? room.PlayerOneLapPlayedCount : room.PlayerTwoLapPlayedCount;
         var opponentSetup = Id == room.PlayerOneId ? room.PlayerTwoSetup : room.PlayerOneSetup;
         ShipDestroyed += opponentSetup!.Ships.Count;
+        CalculateExperienceData();
     }
+
+    public void CalculateExperienceData()
+    {
+        const int xpByLevel = 40;
+        const double ratioByLevel = 1.7;
+        const int safetyWhileLimit = 1000;
+        var level = 1;
+        var deltaExperience = TotalExperience;
+        var cumulativeRatio = 1.0;
+        var safetyLoopCount = 0;
+        while (deltaExperience >= xpByLevel * cumulativeRatio)
+        {
+            level++;
+            deltaExperience -= (int)(xpByLevel * cumulativeRatio);
+            cumulativeRatio += ratioByLevel;
+            safetyLoopCount++;
+            if (safetyLoopCount > safetyWhileLimit)
+            {
+                break;
+            }
+        }
+        Level = level;
+        ExperienceScopeNextLevel = deltaExperience;
+        ExperienceRequiredNextLevel = (int)(xpByLevel * cumulativeRatio);
+    }
+    
 }

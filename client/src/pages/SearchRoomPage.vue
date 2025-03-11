@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import type { QTableColumn } from 'quasar'
 import {
   createRoomAPI,
   ERoomState,
   getAvailableRoomsAPI,
-  JoinRoomAsOpponentAPI,
+  joinRoomAsOpponentAPI,
   type IRoomFromListDto,
 } from 'src/api/rooms.api'
+import HologramText from 'src/components/general/HologramText.vue'
 import SpaceButton from 'src/components/general/SpaceButton.vue'
-import SpaceContainer from 'src/components/general/SpaceContainer.vue'
 import { useSignalR } from 'src/hooks/use-signalr'
 import { useUserStore } from 'src/stores/user-store'
 import { onMounted, onUnmounted, ref } from 'vue'
@@ -16,8 +17,41 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const userStore = useUserStore()
 const hub = useSignalR('room-list')
+const columnsRooms: QTableColumn[] = [
+  {
+    name: 'index',
+    label: '#',
+    align: 'left',
+    field: 'index',
+  },
+  {
+    name: 'playerOne',
+    label: 'Joueur 1',
+    align: 'left',
+    field: 'playerOne',
+  },
+  {
+    name: 'playerTwo',
+    label: 'Joueur 2',
+    align: 'left',
+    field: 'playerTwo',
+  },
+  {
+    name: 'state',
+    label: 'État',
+    align: 'left',
+    field: 'state',
+  },
+  {
+    name: 'actions',
+    label: 'Actions',
+    align: 'center',
+    field: 'actions',
+  },
+];
 
 const allRooms = ref<IRoomFromListDto[]>([])
+const isLoadingCreateRoom = ref<boolean>(false)
 
 async function setupHub() {
   hub.connection.on('RoomListUpdated', async () => {
@@ -47,11 +81,12 @@ async function setupAllRoom() {
   })
 }
 async function createRoom() {
+  isLoadingCreateRoom.value = true
   const newRoomGuid = await createRoomAPI()
   await router.push({ name: 'room-as-opponent', params: { guid: newRoomGuid } })
 }
 async function joinRoomAsOpponent(room: IRoomFromListDto) {
-  await JoinRoomAsOpponentAPI(room.guid)
+  await joinRoomAsOpponentAPI(room.guid)
   await router.push({ name: 'room-as-opponent', params: { guid: room.guid } })
 }
 function canSeeRoomAsOpponent(room: IRoomFromListDto) {
@@ -69,8 +104,17 @@ function canJoinRoomAsOpponent(room: IRoomFromListDto) {
 function canJoinRoomAsSpectator(room: IRoomFromListDto) {
   if (room.playerOne.id === userStore.user!.id || room.playerTwo?.id === userStore.user!.id)
     return false
-  if (room.state !== ERoomState.playing) return false
+  if (room.state !== ERoomState.playing && room.state !== ERoomState.placing) return false
   return true
+}
+function getLabelRoomState(state: ERoomState) {
+  const labelByState: Record<ERoomState, string> = {
+    '0': 'En cours',
+    '1': 'En attente',
+    '2': 'Placement',
+    '3': 'Archive'
+  }
+  return labelByState[state]
 }
 
 onMounted(async () => {
@@ -83,32 +127,50 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div class="flex column items-center">
-    <SpaceButton @click="createRoom" label="Create room" />
+  <div class="flex column items-center full-width full-height">
+    <SpaceButton @click="createRoom" label="Créer bataille" :disabled="isLoadingCreateRoom" />
 
-    <q-list class="q-py-xl">
-      <q-item v-for="room in allRooms" :key="room.guid" class="flex row items-center">
-        <SpaceContainer highlitable="none" scan-line="none">
-          <div class="text-white text-h6">
-            {{ room.playerOne.pseudo }} VS {{ room.playerTwo?.pseudo ?? '???' }}
-          </div>
-        </SpaceContainer>
+    <transition v-if="!isLoadingCreateRoom && allRooms.length > 0" appear enter-active-class="animated fadeIn"
+      leave-active-class="animated fadeOut">
 
-        <SpaceButton
-          label="Specateur"
-          :disabled="!canJoinRoomAsSpectator(room)"
-          :to="{ name: 'room-as-spectator', params: { guid: room.guid } }"
-          color="secondary"
-          size="sm"
-        />
-        <SpaceButton
-          :disabled="!canSeeRoomAsOpponent(room) && !canJoinRoomAsOpponent(room)"
-          label="Affronter"
-          color="secondary"
-          size="sm"
-          @click="joinRoomAsOpponent(room)"
-        />
-      </q-item>
-    </q-list>
+      <div class="flex column items-center q-mb-md full-width full-height">
+
+        <q-table :rows="allRooms" :columns="columnsRooms" class="space-table" row-key="id"
+          table-header-class="space-table-header" hide-bottom :pagination="{ rowsPerPage: 1000 }">
+          <template v-slot:body-cell-index="props">
+            <q-td :props="props">
+              <span class="text-body1">{{ props.rowIndex }}</span>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-playerOne="props">
+            <q-td :props="props">
+              <HologramText :text="props.row.playerOne.pseudo" class="text-body1" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-playerTwo="props">
+            <q-td :props="props">
+              <HologramText :text="props.row.playerTwo?.pseudo ?? ''" class="text-body1" />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-state="props">
+            <q-td :props="props">
+              <span class="text-body1">{{ getLabelRoomState(props.row.state) }}</span>
+            </q-td>
+          </template>
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props">
+              <div class="flex row justify-end items-center">
+                <SpaceButton label="Specateur" :disabled="!canJoinRoomAsSpectator(props.row)"
+                  @click="router.push({ name: 'room-as-spectator', params: { guid: props.row.guid } })" size="sm"
+                  color="secondary" />
+                <SpaceButton :disabled="!canSeeRoomAsOpponent(props.row) && !canJoinRoomAsOpponent(props.row)"
+                  label="Affronter" size="sm" color="secondary" @click="joinRoomAsOpponent(props.row)" />
+              </div>
+            </q-td>
+          </template>
+        </q-table>
+      </div>
+    </transition>
+    <SpaceButton size="sm" label="Retour" @click="router.push({ name: 'home' })" />
   </div>
 </template>

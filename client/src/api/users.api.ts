@@ -8,6 +8,9 @@ export async function updatePseudoAPI(pseudo: string): Promise<void> {
 export async function getProfileAPI(): Promise<IUserProfilDto> {
   return (await api.get(`${userUrl}/me`)).data
 }
+export async function getLeaderboardAPI(): Promise<IUserLeaderboardDto[]> {
+  return (await api.get(`${userUrl}/leaderboard`)).data
+}
 
 export interface IUserProfilDto {
   idRes: string
@@ -18,5 +21,13 @@ export interface IUserProfilDto {
   shipDestroyed: number
   lapPlayed: number
   rankLeaderboard: number
-  experience: number
+  level: number
+  experienceScopeNextLevel: number
+  experienceRequiredNextLevel: number
+}
+export interface IUserLeaderboardDto {
+  id: number
+  pseudo: string
+  winCount: number
+  level: number
 }

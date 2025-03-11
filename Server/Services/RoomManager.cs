@@ -202,6 +202,14 @@ public class RoomManager
         var isPlayerOnePlaying = room.PlayerOneId == playerId;
         var roomSetup = isPlayerOnePlaying ? room.PlayerTwoSetup! : room.PlayerOneSetup!;
         var hit = roomSetup.FireOffset(xOffset, yOffset);
+        if (isPlayerOnePlaying)
+        {
+            room.PlayerOneLapPlayedCount++;
+        }
+        else
+        {
+            room.PlayerTwoLapPlayedCount++;
+        }
         room.Moves.Add(new RoomAvailable.RoomMove
         {
             Id = room.Moves.Count + 1,
@@ -272,6 +280,8 @@ public class RoomAvailable
     private System.Timers.Timer Timer { get; } = new(1000);
     public required Func<string, int, Task> CallbackTimerTimeout { get; set; }
     public required Func<string, int, Task> CallbackTimerTick { get; set; }
+    public int PlayerOneLapPlayedCount { get; set; }
+    public int PlayerTwoLapPlayedCount { get; set; }
 
     public void StartTimer()
     {

@@ -25,6 +25,7 @@ const routes: RouteRecordRaw[] = [
         name: 'login',
         beforeEnter: guardIsDisconnected,
         component: () => import('pages/LoginPage.vue'),
+        meta: { layoutLogo: 'important' },
       },
       {
         path: 'home',
@@ -49,7 +50,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'room/:guid/opponent',
             name: 'room-as-opponent',
-            component: () => import('pages/RoomOpponentPage.vue'),
+            component: () => import('pages/RoomFightPage.vue'),
           },
           {
             path: 'room/:guid/spectator',

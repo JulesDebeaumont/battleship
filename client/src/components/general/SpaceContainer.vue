@@ -48,14 +48,14 @@ const classesScanLine = computed(() => {
   color: #fff;
   overflow: hidden;
   transition: all 0.1s ease;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(2px);
   transition: all 0.1s;
 }
 .space-container-sm {
-  padding: 1rem 1rem;
-  font-size: 1.1rem;
+  padding: 0.8rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin: 7px;
+  margin: 6px;
 }
 .space-container-md {
   padding: 1.3rem 3rem;

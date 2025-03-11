@@ -16,6 +16,14 @@ const propsComponent = withDefaults(
     size: 'md',
   },
 )
+const emitsComponents = defineEmits<{
+  (e: 'click'): Promise<void> | void
+}>()
+
+async function click() {
+  if (propsComponent.disabled === true) return
+  await emitsComponents('click')
+}
 </script>
 
 <template>
@@ -26,6 +34,7 @@ const propsComponent = withDefaults(
     highlitable="hover"
     scan-line="hover"
     class="flex flex-center"
+    @click="click"
   >
     <HologramText :color="propsComponent.color" :text="propsComponent.label" />
   </SpaceContainer>

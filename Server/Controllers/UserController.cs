@@ -22,6 +22,10 @@ public class UserController : ControllerBase
     public async Task<IActionResult> GetProfile()
     {
         var user = await _userService.GetUserProfile(User.Identity!.Name!);
+        if (user == null)
+        {
+            return Unauthorized();
+        }
         return Ok(user);
     }
     
@@ -31,6 +35,14 @@ public class UserController : ControllerBase
     {
         await _userService.UpdateUserPseudo(User.Identity!.Name!, dtoIn.Pseudo);
         return Ok();
+    }
+
+    [HttpGet]
+    [Route("leaderboard")]
+    public async Task<ActionResult> GetLeaderboard()
+    {
+        var leaderboard = await _userService.GetLeaderboard();
+        return Ok(leaderboard);
     }
     
     public record UpdatePseudoDtoIn

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Server.DAL.Repositories;
 using Server.Models;
 using Server.Services.Utils;
 
@@ -7,10 +8,12 @@ namespace Server.Services;
 public class UserService
 {
     private readonly UserManager<User> _userManager;
+    private readonly UserRepository _userRepository;
 
-    public UserService(UserManager<User> userManager)
+    public UserService(UserManager<User> userManager, UserRepository userRepository)
     {
         _userManager = userManager;
+        _userRepository = userRepository;
     }
 
     public async Task UpdateUserPseudo(string userId, string pseudo)
@@ -22,6 +25,11 @@ public class UserService
         }
         user.Pseudo = pseudo;
         await _userManager.UpdateAsync(user);
+    }
+
+    public async Task<List<UserRepository.UserLeaderboardDto>> GetLeaderboard()
+    {
+        return await _userRepository.GetLeaderboard();
     }
 
     public async Task<UserProfileDto?> GetUserProfile(string userId)
@@ -41,8 +49,9 @@ public class UserService
             LooseCount = user.LooseCount,
             ShipDestroyed = user.ShipDestroyed,
             LapPlayed = user.LapPlayed,
-            RankLeaderboard = user.RankLeaderboard,
-            Experience = user.Experience
+            Level = user.Level,
+            ExperienceScopeNextLevel = user.ExperienceScopeNextLevel,
+            ExperienceRequiredNextLevel = user.ExperienceRequiredNextLevel,
         };
         return userProfil;
     }
@@ -57,7 +66,8 @@ public class UserService
         public int LooseCount { get; set; }
         public int ShipDestroyed { get; set; }
         public int LapPlayed { get; set; }
-        public int RankLeaderboard { get; set; }
-        public int Experience { get; set; }
+        public int Level { get; set; }
+        public int ExperienceScopeNextLevel { get; set; }
+        public int ExperienceRequiredNextLevel { get; set; }
     }
 }

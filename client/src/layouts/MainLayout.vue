@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import GameLogo from 'src/components/general/GameLogo.vue'
-import { onMounted, ref } from 'vue'
+import ShootingStars from 'src/components/layout/ShootingStars.vue';
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-
-const intervalStar = ref()
-
-onMounted(() => {})
 </script>
 
 <template>
   <q-layout view="lHh Lpr lFf">
     <div class="layout-bg"></div>
     <div class="layout-layer-bg"></div>
-    <div class="layout-stars"></div>
+    <ShootingStars />
     <q-page-container>
       <q-page>
         <GameLogo />

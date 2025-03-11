@@ -25,8 +25,14 @@ const shipClasses = computed(() => {
 </script>
 
 <template>
-    <div class="gameboard-box">
+    <div class="gameboard-box gameboard-box-player">
         <div :class="shipClasses"></div>
         <div :class="hitClasses"></div>
     </div>
 </template>
+
+<style>
+.gameboard-box-player {
+    background-color: #587e74b0;
+}
+</style>

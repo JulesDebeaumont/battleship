@@ -59,6 +59,7 @@ public class Program
     builder.Services.AddTransient<NoyauSihService>();
     builder.Services.AddTransient<UserService>();
     builder.Services.AddScoped<RoomRepository>();
+    builder.Services.AddScoped<UserRepository>();
     builder.Services.AddSingleton<RoomManager>();
 
     builder.Services.AddIdentityCore<User>()

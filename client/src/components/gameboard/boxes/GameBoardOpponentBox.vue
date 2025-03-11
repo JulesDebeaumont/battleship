@@ -18,7 +18,7 @@ async function clickBox() {
 
 const boxClasses = computed(() => {
     let classes = ''
-    if (roomStore.isCurrentUserTurn && roomStore.getOpponentHit(propsComponents.xOffset, propsComponents.yOffset) === null) classes += ' gameboard-box-interactive'
+    if (roomStore.isCurrentUserTurn && roomStore.getOpponentHit(propsComponents.xOffset, propsComponents.yOffset) === null) classes += ' gameboard-box-opponent-interactive'
     return classes
 })
 const hitClasses = computed(() => {
@@ -31,8 +31,24 @@ const hitClasses = computed(() => {
 </script>
 
 <template>
-    <div class="gameboard-box" @click="clickBox" :class="boxClasses">
+    <div class="gameboard-box gameboard-box-opponent" @click="clickBox" :class="boxClasses">
         <div :class="hitClasses">
         </div>
     </div>
 </template>
+
+<style>
+.gameboard-box-opponent {
+    background-color: #587e74b0;
+    transition: all 0.1s;
+}
+.gameboard-box-opponent:hover {
+    background-color: rgba(165, 255, 255, 0.425);
+}
+.gameboard-box-opponent-interactive {
+    background-color: #ceffffb7;
+}
+.gameboard-box-opponent-interactive:hover {
+    background-color: #85ffffee;
+}
+</style>
