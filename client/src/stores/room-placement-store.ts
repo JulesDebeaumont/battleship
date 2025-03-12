@@ -3,12 +3,12 @@ import { uid } from 'quasar'
 import { placeInRoomAPI } from 'src/api/rooms.api'
 
 export const GRID_SIZE = 8 + 1
-// TODO A l'avenir, générer la list de bateau selon un mode..
+// TODO A l'avenir, générer la list de ship selon un mode et une taille de grid
 const defaultVerticalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'big',
-    classes: 'ship1-vertical',
+    orientation: 'vertical',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -21,7 +21,7 @@ const defaultVerticalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'medium',
-    classes: 'ship2-vertical',
+    orientation: 'vertical',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -33,7 +33,7 @@ const defaultVerticalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'small',
-    classes: 'ship3-vertical',
+    orientation: 'vertical',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -46,7 +46,7 @@ const defaultHorizontalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'big',
-    classes: 'ship1-horizontal',
+    orientation: 'horizontal',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -59,7 +59,7 @@ const defaultHorizontalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'medium',
-    classes: 'ship2-horizontal',
+    orientation: 'horizontal',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -71,7 +71,7 @@ const defaultHorizontalBoatList: IShipPlacement[] = [
   {
     guid: uid(),
     type: 'small',
-    classes: 'ship3-horizontal',
+    orientation: 'horizontal',
     enabled: true,
     offsets: [
       { xOffset: 0, yOffset: 0 },
@@ -85,7 +85,7 @@ export interface IShipPlacement {
   guid: string
   type: 'small' | 'medium' | 'big'
   enabled: boolean
-  classes: string
+  orientation: 'horizontal' | 'vertical'
   offsets: {
     xOffset: number
     yOffset: number
@@ -110,7 +110,7 @@ export const useRoomPlacementStore = defineStore('room-placement', {
       this.$reset()
       this.roomGuid = roomGuid
       this.verticalBoatList = JSON.parse(JSON.stringify(defaultVerticalBoatList))
-      this.horizontalBoatList =  JSON.parse(JSON.stringify(defaultHorizontalBoatList))
+      this.horizontalBoatList = JSON.parse(JSON.stringify(defaultHorizontalBoatList))
     },
     tryAddToCurrentPlacement(boat: IShipPlacement, xOffset: number, yOffset: number): boolean {
       let invalid = false
@@ -124,7 +124,7 @@ export const useRoomPlacementStore = defineStore('room-placement', {
           yOffset: offset.yOffset + yOffset,
         }
       })
-      // next time use a new Set 
+      // next time use a new Set
       for (let i = 0; i < calculatedOffsets.length; i++) {
         const calculatedOffset = calculatedOffsets[i]!
         if (
@@ -179,18 +179,11 @@ export const useRoomPlacementStore = defineStore('room-placement', {
     async submitPlacement() {
       if (this.roomGuid === null) return
       await placeInRoomAPI(this.roomGuid, {
-        shipsOffsets: this.currentPlacements.map((placement) => {
-          return {
-            guid: placement.guid,
-            classes: placement.classes,
-            offsets: placement.offsets,
-          }
-        }),
+        shipsOffsets: this.currentPlacements,
       })
       this.hasSubmitPlacement = true
     },
     clear() {
-      console.log('unregister 2')
       this.$reset()
     },
   },

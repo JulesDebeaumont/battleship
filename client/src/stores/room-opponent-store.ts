@@ -14,16 +14,8 @@ import type { IShipPlacement } from './room-placement-store'
 export const GRID_SIZE = 8 + 1
 
 interface IRoomUserSetup {
-  ships: IShipPlacementStrict[]
+  ships: IShipPlacement[]
   firedOffsets: IOffsetsWithHit[]
-}
-interface IShipPlacementStrict {
-  guid: string
-  classes: string
-  offsets: {
-    xOffset: number
-    yOffset: number
-  }[]
 }
 interface IRoomOpponentSetup {
   firedOffsets: IOffsetsWithHit[]
@@ -182,25 +174,9 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     },
     async setupRoom(roomGuid: string) {
       this.room = await getRoomAsOpponentByGuidAPI(roomGuid)
-      if (this.room.state === ERoomState.playing) { // in case of refresh page during play
-        this.roomUserSetup = {
-          ships: this.room.userSetup?.ships.map((ship) => {
-            return {
-              guid: ship.guid,
-              classes: ship.classes,
-              offsets: ship.positions.map((shipPosition) => {
-                return {
-                  xOffset: shipPosition.xOffset,
-                  yOffset: shipPosition.yOffset
-                }
-              })
-            }
-          }) ?? [],
-          firedOffsets: this.room.userFiredOffsets ?? []
-        }
-        this.roomOpponentSetup = {
-          firedOffsets: this.room.opponentFiredOffsets ?? []
-        }
+      if (this.room.state === ERoomState.playing) {
+        // in case of refresh page during play
+        // TODO
       }
     },
     place(boatPlacements: IShipPlacement[]) {
@@ -235,7 +211,7 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         }) ?? null
       )
     },
-    getSelfBoat(xOffset: number, yOffset: number): IShipPlacementStrict | null {
+    getSelfBoat(xOffset: number, yOffset: number): IShipPlacement | null {
       if (this.roomUserSetup === null) return null
       return (
         this.roomUserSetup.ships.find((userShip) => {

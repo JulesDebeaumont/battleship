@@ -345,18 +345,20 @@ public class RoomAvailable
             public readonly OffsetsWithHitDto[] Positions;
             public bool IsDrawned { get; private set; }
             public string Guid { get; set; }
-            public string Classes { get; set; }
+            public string Type { get; set; }
+            public string Orientation { get; set; }
 
-            public Ship(ShipOffsetsDto positions)
+            public Ship(ShipOffsetsDto dataOffsets)
             {
-                Positions = positions.Offsets.Select(p => new OffsetsWithHitDto
+                Positions = dataOffsets.Offsets.Select(p => new OffsetsWithHitDto
                 {
                     XOffset = p.XOffset,  
                     YOffset = p.YOffset, 
                     Hit = false
                 }).ToArray();
-                Guid = positions.Guid;
-                Classes = positions.Classes;
+                Guid = dataOffsets.Guid;
+                Type = dataOffsets.Type;
+                Orientation = dataOffsets.Orientation;
             }
 
             public void TryHit(int xOffset, int yOffset)
@@ -546,6 +548,7 @@ public record OffsetsWithHitDto
 public record ShipOffsetsDto
 {
     public string Guid { get; set; } = string.Empty;
-    public string Classes { get; set; } = string.Empty;
+    public string Orientation { get; set; } = string.Empty;
+    public string Type { get; set; } = String.Empty;
     public OffsetsDto[] Offsets { get; set; } = [];
 }

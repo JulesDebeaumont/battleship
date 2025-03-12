@@ -1,4 +1,5 @@
 import { api } from 'src/boot/axios'
+import type { IShipPlacement } from 'src/stores/room-placement-store'
 
 const roomsUrl = 'rooms'
 
@@ -14,10 +15,11 @@ export async function getRoomAsOpponentByGuidAPI(roomGuid: string): Promise<IRoo
 export async function getRoomAsSpectatorByGuidAPI(roomGuid: string): Promise<IRoomSpectatorDto> {
   return (await api.get(`${roomsUrl}/${roomGuid}/as-spectator`)).data
 }
-export async function placeInRoomAPI(roomGuid: string, shipsPlacements: IShipPlacementDto): Promise<void> {
-  return (
-    await api.post(`${roomsUrl}/${roomGuid}/place`, shipsPlacements)
-  ).data
+export async function placeInRoomAPI(
+  roomGuid: string,
+  shipsPlacements: IShipPlacementDto,
+): Promise<void> {
+  return (await api.post(`${roomsUrl}/${roomGuid}/place`, shipsPlacements)).data
 }
 export async function fireInRoomAPI(
   roomGuid: string,
@@ -90,14 +92,11 @@ interface IRoomSetup {
 interface IShip {
   positions: IOffsetsWithHit[]
   guid: string
-  classes: string
+  type: IShipPlacement['type']
+  orientation: IShipPlacement['orientation']
 }
 export interface IShipPlacementDto {
-  shipsOffsets: {
-    guid: string
-    classes: string
-    offsets: IOffsets[]
-  }[]
+  shipsOffsets: Omit<IShipPlacement, 'enabled'>[]
 }
 export enum ERoomState {
   playing = 0,
