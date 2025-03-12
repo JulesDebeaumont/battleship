@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoomOpponentStore } from 'src/stores/room-opponent-store';
+import { useRoomFightStore } from 'src/stores/room-fight-store';
 import GameBoardGeneric from './GameBoardGeneric.vue';
 import GameBoardPlacementBox from './boxes/GameBoardPlacementBox.vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -8,8 +8,9 @@ import GameBoardShipToolBox from './GameBoardShipToolBox.vue';
 import { useRoute } from 'vue-router';
 import SpaceButton from '../general/SpaceButton.vue';
 import WaitingButton from '../general/WaitingButton.vue';
+import { TIMEOUT_PLACEMENT } from 'src/utils/board-utils';
 
-const roomStore = useRoomOpponentStore()
+const roomStore = useRoomFightStore()
 const placementStore = useRoomPlacementStore()
 const route = useRoute()
 const roomGuid = route.params.guid!.toString()
@@ -34,6 +35,10 @@ const hasPlaced = computed(() => {
 const labelWaitingForOpponent = computed(() => {
     return "En attente de " + roomStore.getOpponentPseudo + ".."
 })
+const labelPlacingTimerButton = computed(() => {
+    const invertedTimer = TIMEOUT_PLACEMENT - 1 - roomStore.roomPlacingTimer
+    return `Temps restant : ${invertedTimer > 0 ? invertedTimer : 0}`
+})
 
 onMounted(() => {
     placementStore.setup(roomGuid)
@@ -45,15 +50,20 @@ onUnmounted(() => {
 
 <template>
     <div class="flex flex-center column">
+
+        <WaitingButton :label="`Placements des vaisseaux : ${labelPlacingTimerButton}`" />
+
         <GameBoardGeneric class="q-mb-md">
             <template v-slot:boxes="boxSlot">
-                <GameBoardPlacementBox :xOffset="boxSlot.xOffset" :yOffset="boxSlot.yOffset" />
+                <GameBoardPlacementBox :xOffset="boxSlot.xOffset" :yOffset="boxSlot.yOffset"
+                    :key="`${boxSlot.xOffset}-${boxSlot.yOffset}`" />
             </template>
         </GameBoardGeneric>
 
-        <SpaceButton v-if="!hasPlaced" @click="validatePlacement" :disabled="disableSubmitPlacement" label="Valider placement" />
+        <SpaceButton v-if="!hasPlaced" @click="validatePlacement" :disabled="disableSubmitPlacement"
+            label="Valider placement" />
         <WaitingButton v-else :label="labelWaitingForOpponent" />
 
-        <GameBoardShipToolBox v-if="!hasPlaced" />
+        <GameBoardShipToolBox />
     </div>
 </template>

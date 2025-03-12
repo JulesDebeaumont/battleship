@@ -9,7 +9,7 @@ export async function getAvailableRoomsAPI(): Promise<IRoomFromListDto[]> {
 export async function createRoomAPI(): Promise<string> {
   return (await api.post(`${roomsUrl}/new`)).data.guid
 }
-export async function getRoomAsOpponentByGuidAPI(roomGuid: string): Promise<IRoomOpponentDto> {
+export async function getRoomAsOpponentByGuidAPI(roomGuid: string): Promise<IRoomPlayerDto> {
   return (await api.get(`${roomsUrl}/${roomGuid}/as-opponent`)).data
 }
 export async function getRoomAsSpectatorByGuidAPI(roomGuid: string): Promise<IRoomSpectatorDto> {
@@ -25,7 +25,7 @@ export async function fireInRoomAPI(
   roomGuid: string,
   xOffset: number,
   yOffset: number,
-): Promise<boolean> {
+): Promise<EHitType> {
   return (
     await api.post(`${roomsUrl}/${roomGuid}/fire`, {
       xOffset,
@@ -36,10 +36,10 @@ export async function fireInRoomAPI(
 export async function leaveRoomAPI(roomGuid: string): Promise<void> {
   return (await api.post(`${roomsUrl}/${roomGuid}/leave`)).data
 }
-export async function joinRoomAsOpponentAPI(roomGuid: string): Promise<void> {
+export async function joinRoomAsOpponentAPI(roomGuid: string): Promise<IRoomPlayerDto> {
   return (await api.post(`${roomsUrl}/${roomGuid}/join-as-opponent`)).data
 }
-export async function JoinRoomAsSpectatorAPI(roomGuid: string): Promise<void> {
+export async function JoinRoomAsSpectatorAPI(roomGuid: string): Promise<IRoomSpectatorDto> {
   return (await api.post(`${roomsUrl}/${roomGuid}/join-as-spectator`)).data
 }
 
@@ -51,7 +51,7 @@ export interface IRoomFromListDto {
   createdAt: Date
   startedAt: Date | undefined
 }
-export interface IRoomOpponentDto {
+export interface IRoomPlayerDto {
   guid: string
   state: ERoomState
   playerOne: IRoomPlayer
@@ -79,13 +79,13 @@ export interface IOffsets {
 export interface IOffsetsWithHit {
   xOffset: number
   yOffset: number
-  hit: boolean
+  hit: EHitType
 }
 interface IRoomPlayer {
   id: number
   pseudo: string
 }
-interface IRoomSetup {
+export interface IRoomSetup {
   ships: IShip[]
   firedOffsets: IOffsetsWithHit[]
 }
@@ -103,4 +103,10 @@ export enum ERoomState {
   pending = 1,
   placing = 2,
   archived = 3,
+}
+export enum EHitType {
+  none = 0,
+  hitNothing = 1,
+  hitShip = 2,
+  hitShipAndDrawned = 3
 }

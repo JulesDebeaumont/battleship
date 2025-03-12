@@ -12,7 +12,7 @@ interface IShootingStar {
 
 const TRY_EVERY = 1000 * 1
 const PERCENT_CHANCE = 20 / 100
-const STARFALL_STAR_COUNT = 30
+const STARFALL_STAR_COUNT = 50
 
 const starStore = useShootingStarStore()
 

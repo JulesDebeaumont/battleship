@@ -56,10 +56,10 @@ onMounted(async () => {
     <q-dialog v-model="dialogChangePseudo" v-bind="dialogDefaultBind">
       <SpaceCard color="secondary">
         <q-form ref="formPseudo" class="flex column" @submit="changePseudo">
-          <q-input v-model="pseudoInput" label="Pseudo" v-bind="inputDefaultBind"
-            :rules="[isRequiredRule, maxLengthRule(100), minLengthRule(3)]" />
+          <q-input v-model="pseudoInput" label="Pseudo" class="q-mt-sm" v-bind="inputDefaultBind"
+            :rules="[isRequiredRule, maxLengthRule(20), minLengthRule(3)]" />
           <SpaceButton @click="formPseudo?.submit" :disabled="isLoadingUpdatePseudo" label="Valider"
-            color="secondary" />
+            color="secondary" size="sm" />
         </q-form>
       </SpaceCard>
     </q-dialog>
@@ -123,6 +123,6 @@ onMounted(async () => {
 .experience-bar {
   border: 2px solid rgba(0, 225, 255, 0.2);
   background: rgb(6, 27, 39);
-  box-shadow: 0 0 15px rgba(0, 136, 255, 0.541);
+  box-shadow: 0 0 15px rgba(0, 136, 255, 0.692);
 }
 </style>

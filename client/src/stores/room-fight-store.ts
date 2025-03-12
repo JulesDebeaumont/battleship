@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { Notify } from 'quasar'
-import type { IOffsetsWithHit, IRoomOpponentDto } from 'src/api/rooms.api'
+import type { IOffsetsWithHit, IRoomPlayerDto } from 'src/api/rooms.api'
 import {
+  EHitType,
   ERoomState,
   fireInRoomAPI,
   getRoomAsOpponentByGuidAPI,
@@ -9,6 +10,7 @@ import {
 } from 'src/api/rooms.api'
 import { useSignalR } from 'src/hooks/use-signalr'
 import { useUserStore } from './user-store'
+import { useShootingStarStore } from './shooting-star-store'
 import type { IShipPlacement } from './room-placement-store'
 
 export const GRID_SIZE = 8 + 1
@@ -21,11 +23,11 @@ interface IRoomOpponentSetup {
   firedOffsets: IOffsetsWithHit[]
 }
 
-export const useRoomOpponentStore = defineStore('room-opponent', {
+export const useRoomFightStore = defineStore('room-fight', {
   state: () => ({
     hub: useSignalR('rooms-on'),
     userStore: useUserStore(),
-    room: <IRoomOpponentDto | null>null,
+    room: <IRoomPlayerDto | null>null,
     roomUserSetup: <IRoomUserSetup>{
       ships: [],
       firedOffsets: [],
@@ -35,7 +37,9 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     },
     playerOneReady: <boolean>false,
     playerTwoReady: <boolean>false,
-    roomTimer: <number>0,
+    roomPlacingTimer: <number>0,
+    roomLapTimer: <number>0,
+    hasBeenCanceled: <boolean>false,
     lap: <number>1,
     winnerId: <number | null>null,
   }),
@@ -71,6 +75,7 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     },
     getWinnerString(): string | null {
       if (this.room === null) return null
+      if (this.hasBeenCanceled) return 'Partie annulée.'
       let pseudo: string | null = null
       if (this.winnerId === this.room.playerOne.id) pseudo = this.room.playerOne.pseudo
       if (this.winnerId === this.room.playerTwo?.id) pseudo = this.room.playerTwo.pseudo
@@ -94,7 +99,7 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     async register(roomGuid: string) {
       this.$reset()
       await this.setupRoom(roomGuid)
-      this.hub.connection.on('OpponentJoined', (room: IRoomOpponentDto, playerId: number) => {
+      this.hub.connection.on('OpponentJoined', (room: IRoomPlayerDto, playerId: number) => {
         this.room = room
         if (playerId !== this.userStore.user!.id) {
           Notify.create({
@@ -136,19 +141,26 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
       })
       this.hub.connection.on(
         'Move',
-        (playerId: number, xOffset: number, yOffset: number, hit: boolean) => {
+        (playerId: number, xOffset: number, yOffset: number, hit: EHitType) => {
           if (this.room === null || this.userStore.user === null || this.room.playerTwo === null)
             return
           if (playerId === this.userStore.user.id) return
           this.roomUserSetup.firedOffsets.push({ xOffset, yOffset, hit })
           this.lap++
-          this.roomTimer = 0
+          this.roomLapTimer = 0
         },
       )
-      this.hub.connection.on('TimerTick', (timer: number) => {
-        this.roomTimer = timer
+      this.hub.connection.on('PlacingTimerTick', (timer: number) => {
+        this.roomPlacingTimer = timer
       })
-      this.hub.connection.on('TimerTimeout', (newLapCount: number) => {
+      this.hub.connection.on('PlacingTimerTimeout', () => {
+        if (this.room === null) return
+        this.room.state = ERoomState.archived
+      })
+      this.hub.connection.on('LapTimerTick', (timer: number) => {
+        this.roomLapTimer = timer
+      })
+      this.hub.connection.on('LapTimerTimeout', (newLapCount: number) => {
         if (this.isCurrentUserTurn) {
           Notify.create({
             type: 'negative',
@@ -158,15 +170,16 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
         this.lap = newLapCount
       })
       this.hub.connection.on('PlayerWon', (playerId: number) => {
-        this.winnerId = playerId
-        if (this.room === null) return
-        this.room.state = ERoomState.archived
+        setTimeout(() => {
+          if (this.room === null) return
+          this.winnerId = playerId
+          this.room.state = ERoomState.archived
+        }, 1500)
       })
       await this.hub.connect()
       await this.hub.invokeCommand('JoinRoomOpponentChannel', roomGuid)
     },
     async unregister() {
-      console.log('unregister 1')
       await this.hub.disconnect()
       if (this.room === null) return
       await leaveRoomAPI(this.room.guid)
@@ -175,6 +188,7 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     async setupRoom(roomGuid: string) {
       this.room = await getRoomAsOpponentByGuidAPI(roomGuid)
       if (this.room.state === ERoomState.playing) {
+
         // in case of refresh page during play
         // TODO
       }
@@ -185,9 +199,13 @@ export const useRoomOpponentStore = defineStore('room-opponent', {
     async fire(xOffset: number, yOffset: number) {
       if (this.room === null) return
       const fireResponse = await fireInRoomAPI(this.room.guid, xOffset, yOffset)
+      if (fireResponse === EHitType.hitShipAndDrawned) {
+        const starStore = useShootingStarStore()
+        starStore.triggerStarfall()
+      }
       this.roomOpponentSetup.firedOffsets.push({ xOffset, yOffset, hit: fireResponse })
       this.lap++
-      this.roomTimer = 0
+      this.roomLapTimer = 0
     },
     getPlayerPseudoById(playerId: number): string {
       if (this.room === null) return ''

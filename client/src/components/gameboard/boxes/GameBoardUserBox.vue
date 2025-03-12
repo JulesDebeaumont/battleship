@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { useRoomOpponentStore } from 'src/stores/room-opponent-store'
+import { useRoomFightStore } from 'src/stores/room-fight-store'
 import { computed } from 'vue'
-import Ship from '../ShipComponent.vue'
+import ShipComponent from '../ShipComponent.vue'
+import { EHitType } from 'src/api/rooms.api';
 
 const propsComponents = defineProps<{
   xOffset: number
   yOffset: number
 }>()
 
-const roomStore = useRoomOpponentStore()
+const roomStore = useRoomFightStore()
 
 const hitClasses = computed(() => {
   let classes = ''
   const selfHit = roomStore.getSelfHit(propsComponents.xOffset, propsComponents.yOffset)
-  if (selfHit !== null && selfHit.hit === true) classes += ' gameboard-box-hit-ship'
-  if (selfHit !== null && selfHit.hit === false) classes += ' gameboard-box-hit'
+  if (selfHit !== null && selfHit.hit === EHitType.hitShipAndDrawned) classes += ' gameboard-box-hit-ship-drawned'
+  if (selfHit !== null && selfHit.hit === EHitType.hitShip) classes += ' gameboard-box-hit-ship'
+  if (selfHit !== null && selfHit.hit === EHitType.hitNothing) classes += ' gameboard-box-hit'
   return classes
 })
 const hasBoat = computed(() => {
@@ -24,7 +26,7 @@ const hasBoat = computed(() => {
 
 <template>
   <div class="gameboard-box gameboard-box-player">
-    <Ship v-if="hasBoat" :ship-placement="hasBoat" />
+    <ShipComponent v-if="hasBoat" :ship-placement="hasBoat" />
     <div :class="hitClasses"></div>
   </div>
 </template>

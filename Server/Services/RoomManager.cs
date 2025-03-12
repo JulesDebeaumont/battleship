@@ -35,7 +35,7 @@ public class RoomManager
         var room = GetRoom(roomGuid);
         if (room == null) return false;
         if (room.PlayerOneId == playerId || room.PlayerTwoId == playerId) return false;
-        if (room.State != ERoomState.Playing) return false;
+        if (room.State != ERoomState.Playing && room.State != ERoomState.Placing) return false;
         return true;
     }
 
@@ -52,6 +52,7 @@ public class RoomManager
         if (room.PlayerTwoId != playerId && room.PlayerOneId != playerId) return false;
         return true;
     }
+    
     public bool CanJoinRoomAsOpponent(string roomGuid, long playerTwoId)
     {
         var room = GetRoom(roomGuid);
@@ -62,18 +63,31 @@ public class RoomManager
         return true;
     }
 
-    public async Task<RoomAvailable> CreateRoom(long playerOneId, Func<string, int, Task> callbackTimerTick, Func<string, int, Task> callbackTimeout)
+    public async Task<RoomAvailable> CreateRoom(
+        long playerOneId, 
+        Func<string, int, Task> callbackPlacingTimerTick, 
+        Func<string, Task> callbackPlacingTimerTimeout,
+        Func<string, int, Task> callbackLapTimerTick, 
+        Func<string, int, Task> callbackLapTimerTimeout)
     {
         var userManager = GetUserManager();
         var playerOne = await userManager.FindByIdAsync(playerOneId.ToString());
+        
+        var mergedPlacingTimeTimeoutCallback = new Func<string, Task>(async (roomGuid) =>
+        {
+            _availableRooms.Remove(roomGuid);
+            await callbackPlacingTimerTimeout.Invoke(roomGuid);
+        });
         var room = new RoomAvailable
         {
             Guid = Guid.NewGuid().ToString(),
             State = ERoomState.Pending,
             PlayerOneId = playerOneId,
             PlayerOne = playerOne,
-            CallbackTimerTick = callbackTimerTick,
-            CallbackTimerTimeout = callbackTimeout
+            CallbackPlacingTimerTick = callbackPlacingTimerTick,
+            CallbackPlacingTimerTimeout = mergedPlacingTimeTimeoutCallback,
+            CallbackLapTimerTick = callbackLapTimerTick,
+            CallbackLapTimerTimeout = callbackLapTimerTimeout
         };
         _availableRooms.Add(room.Guid, room);
         return room;
@@ -87,6 +101,7 @@ public class RoomManager
         room.PlayerTwoId = playerTwoId;
         room.State = ERoomState.Placing;
         room.StartedAt = DateTime.UtcNow;
+        room.StartPlacingTimer();
     }
 
     public async Task RemoveUserFromRoom(long userId, RoomAvailable room)
@@ -180,7 +195,7 @@ public class RoomManager
         if (room.BothPlayerReady)
         {
             room.State = ERoomState.Playing;
-            room.StartTimer();
+            room.StartLapTimer();
         }
     }
 
@@ -196,9 +211,9 @@ public class RoomManager
         return playerId == room.PlayerOneId;
     }
 
-    public async Task<bool> PlayerFireInRoom(long playerId, RoomAvailable room, int xOffset, int yOffset)
+    public async Task<EHitType> PlayerFireInRoom(long playerId, RoomAvailable room, int xOffset, int yOffset)
     {
-        room.StopTimer();
+        room.StopLapTimer();
         var isPlayerOnePlaying = room.PlayerOneId == playerId;
         var roomSetup = isPlayerOnePlaying ? room.PlayerTwoSetup! : room.PlayerOneSetup!;
         var hit = roomSetup.FireOffset(xOffset, yOffset);
@@ -226,7 +241,7 @@ public class RoomManager
         else
         {
             room.LapCount++;
-            room.StartTimer();
+            room.StartLapTimer();
         }
         return hit;
     }
@@ -275,40 +290,72 @@ public class RoomAvailable
     private bool PlayerOneIsReady => PlayerOneSetup?.Ships.Count > 0;
     private bool PlayerTwoIsReady => PlayerTwoSetup?.Ships.Count > 0;
     public bool BothPlayerReady => PlayerOneIsReady && PlayerTwoIsReady;
-    private const int LapCountSecond = 15;
-    private int TimerProgress { get; set; }
-    private System.Timers.Timer Timer { get; } = new(1000);
-    public required Func<string, int, Task> CallbackTimerTimeout { get; set; }
-    public required Func<string, int, Task> CallbackTimerTick { get; set; }
+    private const int PlacementTimeoutSecond = 120;
+    private const int LapTimeoutSecond = 15;
+    private int PlacingTimerProgress { get; set; }
+    private int LapTimerProgress { get; set; }
+    private System.Timers.Timer LapTimer { get; } = new(1000);
+    private System.Timers.Timer PlacingTimer { get; } = new(1000);
+    public required Func<string, int, Task> CallbackPlacingTimerTick { get; set; }
+    public required Func<string, Task> CallbackPlacingTimerTimeout { get; set; }
+    public required Func<string, int, Task> CallbackLapTimerTick { get; set; }
+    public required Func<string, int, Task> CallbackLapTimerTimeout { get; set; }
     public int PlayerOneLapPlayedCount { get; set; }
     public int PlayerTwoLapPlayedCount { get; set; }
 
-    public void StartTimer()
+    public void StartPlacingTimer()
     {
-        Timer.Enabled = true;
-        Timer.AutoReset = true;
-        Timer.Elapsed += RunIntervalTimer;
+        PlacingTimer.Enabled = true;
+        PlacingTimer.AutoReset = true;
+        PlacingTimer.Elapsed += RunIntervalPlacingTimer;
     }
     
-    private void RunIntervalTimer(object? sender, System.Timers.ElapsedEventArgs eventArgs)
+    private void RunIntervalPlacingTimer(object? sender, System.Timers.ElapsedEventArgs eventArgs)
     {
-        CallbackTimerTick.Invoke(Guid, TimerProgress);
-        TimerProgress++;
-        if (TimerProgress >= LapCountSecond)
+        CallbackPlacingTimerTick.Invoke(Guid, PlacingTimerProgress);
+        PlacingTimerProgress++;
+        if (PlacingTimerProgress >= PlacementTimeoutSecond)
         {
-            LapCount++;
-            CallbackTimerTimeout.Invoke(Guid, LapCount);
-            TimerProgress = 0;
+            Archived();
+            CallbackPlacingTimerTimeout.Invoke(Guid);
+            StopPlacingTimer();
         }
     }
 
-    public void StopTimer()
+    public void StopPlacingTimer()
     {
-        Timer.Enabled = false;
-        Timer.AutoReset = false;
-        Timer.Elapsed -= RunIntervalTimer;
-        Timer.Stop();
-        TimerProgress = 0;
+        PlacingTimer.Enabled = false;
+        PlacingTimer.AutoReset = false;
+        PlacingTimer.Elapsed -= RunIntervalPlacingTimer;
+        PlacingTimer.Stop();
+    }
+    
+    public void StartLapTimer()
+    {
+        LapTimer.Enabled = true;
+        LapTimer.AutoReset = true;
+        LapTimer.Elapsed += RunIntervalLapTimer;
+    }
+    
+    private void RunIntervalLapTimer(object? sender, System.Timers.ElapsedEventArgs eventArgs)
+    {
+        CallbackLapTimerTick.Invoke(Guid, LapTimerProgress);
+        LapTimerProgress++;
+        if (LapTimerProgress >= LapTimeoutSecond)
+        {
+            LapCount++;
+            CallbackLapTimerTimeout.Invoke(Guid, LapCount);
+            LapTimerProgress = 0;
+        }
+    }
+
+    public void StopLapTimer()
+    {
+        LapTimer.Enabled = false;
+        LapTimer.AutoReset = false;
+        LapTimer.Elapsed -= RunIntervalLapTimer;
+        LapTimer.Stop();
+        LapTimerProgress = 0;
     }
 
     public void Win(long playerId)
@@ -316,14 +363,14 @@ public class RoomAvailable
         WinnerId = playerId;
         EndedAt = DateTime.UtcNow;
         State = ERoomState.Archived;
-        StopTimer();
+        StopLapTimer();
     }
 
     public void Archived()
     {
         EndedAt = DateTime.UtcNow;
         State = ERoomState.Archived;
-        StopTimer();
+        StopLapTimer();
     }
     
     public class RoomSetup
@@ -342,7 +389,7 @@ public class RoomAvailable
 
         public class Ship
         {
-            public readonly OffsetsWithHitDto[] Positions;
+            public OffsetsWithHitDto[] Positions { get; set; }
             public bool IsDrawned { get; private set; }
             public string Guid { get; set; }
             public string Type { get; set; }
@@ -354,7 +401,7 @@ public class RoomAvailable
                 {
                     XOffset = p.XOffset,  
                     YOffset = p.YOffset, 
-                    Hit = false
+                    Hit = EHitType.None
                 }).ToArray();
                 Guid = dataOffsets.Guid;
                 Type = dataOffsets.Type;
@@ -363,23 +410,23 @@ public class RoomAvailable
 
             public void TryHit(int xOffset, int yOffset)
             {
-                foreach (var position in Positions)
+                var positionToHit = Positions.FirstOrDefault(p => p.XOffset == xOffset && p.YOffset == yOffset);
+                if (positionToHit != null)
                 {
-                    if (position.XOffset == xOffset && position.YOffset == yOffset)
-                    {
-                        position.Hit = true;
-                    }
+                    positionToHit.Hit = EHitType.HitShip;
                 }
-                if (Positions.FirstOrDefault(p => !p.Hit) == null)
+                if (Positions.FirstOrDefault(p => p.Hit != EHitType.HitShip) == null)
                 {
+                    positionToHit!.Hit = EHitType.HitShipAndDrawn;
                     IsDrawned = true;
                 }
             }
         }
         
-        public bool FireOffset(int xOffset, int yOffset)
+        public EHitType FireOffset(int xOffset, int yOffset)
         {
-            var hitCount = Ships.Aggregate(0, (acc, ship) => acc + ship.Positions.Count(p => p.Hit));
+            var hitCount = Ships.Aggregate(0, (acc, ship) => acc + ship.Positions.Count(p => p.Hit == EHitType.HitShip));
+            var shipDrawnedCount = Ships.Count(s => s.IsDrawned);
             foreach (var ship in Ships)
             {
                 ship.TryHit(xOffset, yOffset);
@@ -388,9 +435,19 @@ public class RoomAvailable
             {
                 Dead = true;
             }
-            var hasHit = hitCount != Ships.Aggregate(0, (acc, ship) => acc + ship.Positions.Count(p => p.Hit));
-            FiredOffsets.Add(new OffsetsWithHitDto() { XOffset = xOffset, YOffset = yOffset, Hit = hasHit });
-            return hasHit;
+            var hasHit = hitCount != Ships.Aggregate(0, (acc, ship) => acc + ship.Positions.Count(p => p.Hit == EHitType.HitShip));
+            var hasHitAndDrawn = shipDrawnedCount != Ships.Count(s => s.IsDrawned);
+            var hitType = EHitType.HitNothing;
+            if (hasHit)
+            {
+                hitType = EHitType.HitShip;
+            }
+            if (hasHitAndDrawn)
+            {
+                hitType = EHitType.HitShipAndDrawn;
+            }
+            FiredOffsets.Add(new OffsetsWithHitDto { XOffset = xOffset, YOffset = yOffset, Hit = hitType });
+            return hitType;
         }
     }
     
@@ -401,7 +458,7 @@ public class RoomAvailable
         public long PlayerId { get; set; }
         public int XOffset { get; set; }
         public int YOffset { get; set; }
-        public bool Hit { get; set; }
+        public EHitType Hit { get; set; }
     }
     
     public RoomFromListDto ToListProfilData()
@@ -542,13 +599,21 @@ public record OffsetsWithHitDto
 {
     public int XOffset { get; set; }
     public int YOffset { get; set; }
-    public bool Hit { get; set; }
+    public EHitType Hit { get; set; }
 }
 
 public record ShipOffsetsDto
 {
     public string Guid { get; set; } = string.Empty;
     public string Orientation { get; set; } = string.Empty;
-    public string Type { get; set; } = String.Empty;
+    public string Type { get; set; } = string.Empty;
     public OffsetsDto[] Offsets { get; set; } = [];
+}
+
+public enum EHitType
+{
+    None,
+    HitNothing,
+    HitShip,
+    HitShipAndDrawn
 }

@@ -179,7 +179,9 @@ export const useRoomPlacementStore = defineStore('room-placement', {
     async submitPlacement() {
       if (this.roomGuid === null) return
       await placeInRoomAPI(this.roomGuid, {
-        shipsOffsets: this.currentPlacements,
+        shipsOffsets: this.currentPlacements.map((placement) => {
+          return { ...placement, enabled: undefined }
+        }),
       })
       this.hasSubmitPlacement = true
     },

@@ -56,7 +56,7 @@ watch(
       </draggableComponent>
     </template>
     <template v-else>
-      <Ship :ship-placement="listPlacement.at(0) as IShipPlacement" />
+      <Ship v-if="listPlacement.at(0)" :ship-placement="listPlacement.at(0)!" />
     </template>
   </div>
 </template>

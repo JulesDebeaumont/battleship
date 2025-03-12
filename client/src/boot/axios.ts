@@ -40,11 +40,7 @@ export default defineBoot(() => {
     async (error) => {
     if (error.status === 401 || error.status === 403) {
       const router = useRouter()
-      userStore.logout()
-      await router.push({ name: 'login' })
-      return error
-    }
-    if (error.status === 400) {
+      await router.push({ name: 'home' })
       return error
     }
     Notify.create({

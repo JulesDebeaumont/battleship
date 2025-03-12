@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GRID_SIZE } from 'src/stores/room-opponent-store';
+import { GRID_SIZE } from 'src/stores/room-fight-store';
 import GameBoardIndicatorBox from './boxes/GameBoardIndicatorBox.vue';
 </script>
 
@@ -10,7 +10,7 @@ import GameBoardIndicatorBox from './boxes/GameBoardIndicatorBox.vue';
                 <GameBoardIndicatorBox v-if="row === 1 && cell === 1" :display="''" />
                 <GameBoardIndicatorBox v-if="row === 1 && cell > 1" :display="String.fromCharCode(cell + 63)" />
                 <GameBoardIndicatorBox v-if="row > 1 && cell === 1" :display="row - 1" />
-                <slot v-if="row > 1 && cell > 1" name="boxes" :xOffset="row - 2" :yOffset="cell - 2"></slot>
+                <slot v-if="row > 1 && cell > 1" name="boxes" :xOffset="row - 2" :yOffset="cell - 2" :key="`${row}-${cell}`"></slot>
             </div>
         </div>
     </div>

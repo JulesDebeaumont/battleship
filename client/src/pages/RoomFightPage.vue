@@ -6,7 +6,8 @@ import GameBoardPlacement from 'src/components/gameboard/GameBoardPlacement.vue'
 import GameBoardPlayer from 'src/components/gameboard/GameBoardPlayer.vue'
 import SpaceCard from 'src/components/general/SpaceCard.vue'
 import WaitingButton from 'src/components/general/WaitingButton.vue'
-import { useRoomOpponentStore } from 'src/stores/room-opponent-store'
+import { useRoomFightStore } from 'src/stores/room-fight-store'
+import { TIMEOUT_LAP } from 'src/utils/board-utils'
 import type { Component } from 'vue'
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
@@ -14,7 +15,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
-const roomStore = useRoomOpponentStore()
+const roomStore = useRoomFightStore()
 const roomGuid = route.params.guid!.toString()
 
 const showDialogWinner = ref<boolean>(false)
@@ -29,7 +30,7 @@ watch(
   },
 )
 watch(
-  () => roomStore.roomTimer,
+  () => roomStore.roomLapTimer,
   (newValue) => {
     timer.value = newValue
   },
@@ -49,7 +50,7 @@ async function closeWinnerDialogAndExit() {
 }
 
 const labelTimerButton = computed(() => {
-  const invertedTimer = 14 - timer.value
+  const invertedTimer = TIMEOUT_LAP - 1 - timer.value
   if (roomStore.isCurrentUserTurn) return `Temps restant : ${invertedTimer > 0 ? invertedTimer : 0}`
   return "Votre adversaire joue.."
 })
@@ -102,9 +103,8 @@ onUnmounted(async () => {
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
         <div class="flex column flex-center">
           <WaitingButton :label="labelTimerButton" />
-          <div class="flex row flex-center q-gutter-xl" style="width: 90vw;">
+          <div class="flex row justify-around" style="width: 90vw;">
             <Component :is="getComponentByPlacement('left')"  />
-            <q-space class="q-px-lg" />
             <Component :is="getComponentByPlacement('right')" />
           </div>
         </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IShipPlacement } from 'src/stores/room-placement-store'
+import { BIG_SHIP_SIZE, MEDIUM_SHIP_SIZE, SMALL_SHIP_SIZE, SQUARE_SIZE, SQUARE_SIZE_UNIT } from 'src/utils/gameboard-boxes';
 import { computed } from 'vue'
 
 const propsComponents = withDefaults(
@@ -12,12 +13,26 @@ const propsComponents = withDefaults(
   },
 )
 
-const classes = computed(() => {
+const classesContainer = computed(() => {
   let classes = ''
   if (propsComponents.toolbox) classes += ' ship-toolbox'
-  if (!propsComponents.toolbox) classes += ' ship'
+  else classes += ' ship-container'
   if (propsComponents.toolbox && !propsComponents.shipPlacement.enabled)
     classes += ' ship-toolbox-disabled'
+  return classes
+})
+const stylesContainer = computed(() => {
+  let styles = ''
+  let size = 0
+  if (propsComponents.shipPlacement.type === 'big') size = BIG_SHIP_SIZE
+  if (propsComponents.shipPlacement.type === 'medium') size = MEDIUM_SHIP_SIZE
+  if (propsComponents.shipPlacement.type === 'small') size = SMALL_SHIP_SIZE
+  if (propsComponents.shipPlacement.orientation === 'horizontal') styles += ` width:${size}${SQUARE_SIZE_UNIT}; height: ${SQUARE_SIZE}${SQUARE_SIZE_UNIT};`
+  if (propsComponents.shipPlacement.orientation === 'vertical') styles += ` width:${SQUARE_SIZE}${SQUARE_SIZE_UNIT}; height: ${size}${SQUARE_SIZE_UNIT};`
+  return styles
+})
+const classesShip = computed(() => {
+  let classes = 'ship'
   if (propsComponents.shipPlacement.orientation === 'horizontal') classes += ' ship-horizontal'
   if (propsComponents.shipPlacement.orientation === 'vertical') classes += ' ship-vertical'
   if (propsComponents.shipPlacement.type === 'big') classes += ' ship-big'
@@ -25,62 +40,65 @@ const classes = computed(() => {
   if (propsComponents.shipPlacement.type === 'small') classes += ' ship-small'
   return classes
 })
-
-// TODO calculate height and width with JS + offsets data ? shiplacement.offsets * 60 px ?
+const stylesShip = computed(() => {
+  let styles = ''
+  let size = 0
+  if (propsComponents.shipPlacement.type === 'big') size = BIG_SHIP_SIZE
+  if (propsComponents.shipPlacement.type === 'medium') size = MEDIUM_SHIP_SIZE
+  if (propsComponents.shipPlacement.type === 'small') size = SMALL_SHIP_SIZE
+  styles += ` width:${SQUARE_SIZE}${SQUARE_SIZE_UNIT}; height: ${size}${SQUARE_SIZE_UNIT};`
+  return styles
+})
 </script>
 
 <template>
-  <div :class="classes"></div>
+  <div :class="classesContainer" :style="stylesContainer">
+    <div :class="classesShip" :style="stylesShip"></div>
+  </div>
 </template>
 
 <style>
-.ship {
-  transform-origin: left top 0;
-  white-space: nowrap;
-  background-size: contain;
+.ship-container {
   overflow: visible;
   position: absolute;
   z-index: 2;
+}
+
+.ship-toolbox {
+  overflow: visible;
   height: 100%;
   width: 100%;
+  position: relative;
 }
-.ship-toolbox {
-  background-size: 100% 100%;
-  white-space: nowrap;
-}
+
 .ship-toolbox-disabled {
-  filter: grayscale(80%);
+  filter: grayscale(80%) brightness(40%);
 }
-.ship-small-horizontal {
-  height: 60px;
-  width: 180px;
+.ship {
+  display: flex;
+  background-size: 100% 100%;
 }
-.ship-small-vertical {
-  height: 180px;
-  width: 60px;
+.ship-vertical {
+  transform: rotate(0deg);
 }
-.ship-medium-horizontal {
+
+.ship-horizontal {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  transform:  rotate(90deg);
+  transform-origin: top left;
 }
-.ship-medium-vertical {
-}
-.ship-big-horizontal {
-}
-.ship-big-vertical {
-}
+
 .ship-small {
   background-image: url('/images/ship-small.png');
-  background-color: red;
 }
+
 .ship-medium {
   background-image: url('/images/ship-medium.png');
-  background-color: blue;
-  height: 240px;
-  width: 60px;
 }
+
 .ship-big {
   background-image: url('/images/ship-big.png');
-  background-color: green;
-  height: 300px;
-  width: 60px;
 }
 </style>

@@ -59,7 +59,7 @@ export const useUserStore = defineStore('user', {
         const token = (await loginAPI(casTicket)).token;
         this.authenticate(token);
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     },
     async fakeAuth(idRes: string) {

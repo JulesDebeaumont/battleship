@@ -37,7 +37,7 @@ public class RoomController : ControllerBase
         {
             return BadRequest("Too much rooms already");
         }
-        var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupLapTick, TellHubGroupLapTimeout);
+        var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupPlacingTick,  TellHubGroupPlacingTimeout, TellHubGroupLapTick, TellHubGroupLapTimeout);
         await AlertRoomListHubUpdate();
         return Ok(new { guid = room.Guid });
     }
@@ -75,14 +75,16 @@ public class RoomController : ControllerBase
         var playerId = GetCurrentUserId();
         if (!_roomManager.CanPlayerPlaceInRoom(playerId, guid, dto.ShipsOffsets))
         {
-            return BadRequest();
+            return Unauthorized();
         }
         var room = _roomManager.GetRoom(guid)!;
         _roomManager.PlayerPlaceInRoom(room, playerId, dto.ShipsOffsets);
         await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("PlayerReady", playerId);
+        await _roomGoingOnHub.Clients.Group($"{room.Guid}-spectator").SendAsync("PlayerReady", playerId);
         if (room.BothPlayerReady)
         {
             await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("GameOn");
+            await _roomGoingOnHub.Clients.Group($"{room.Guid}-spectator").SendAsync("GameOn", room.ToSpectatorProfilData());
             await AlertRoomListHubUpdate();
         }
         return Ok();
@@ -95,14 +97,16 @@ public class RoomController : ControllerBase
         var playerId = GetCurrentUserId();
         if (!_roomManager.CanPlayerFireInRoom(guid, playerId))
         {
-            BadRequest();
+            Unauthorized();
         }
         var room = _roomManager.GetRoom(guid)!;
         var hit = await _roomManager.PlayerFireInRoom(playerId, room, dto.XOffset, dto.YOffset);
         await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("Move", playerId, dto.XOffset, dto.YOffset, hit);
+        await _roomGoingOnHub.Clients.Group($"{room.Guid}-spectator").SendAsync("Move", playerId, dto.XOffset, dto.YOffset, hit);
         if (room.WinnerId is not null)
         {
-            await _roomGoingOnHub.Clients.Groups(room.Guid).SendAsync("PlayerWon", room.WinnerId);
+            await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("PlayerWon", room.WinnerId);
+            await _roomGoingOnHub.Clients.Group($"{room.Guid}-spectator").SendAsync("PlayerWon", room.WinnerId);
             await AlertRoomListHubUpdate();
         }
         return Ok(new { hit });
@@ -121,7 +125,8 @@ public class RoomController : ControllerBase
         await _roomManager.RemoveUserFromRoom(userId, room);
         if (room.WinnerId is not null)
         {
-            await _roomGoingOnHub.Clients.Groups(room.Guid).SendAsync("PlayerWon", room.WinnerId);
+            await _roomGoingOnHub.Clients.Group(room.Guid).SendAsync("PlayerWon", room.WinnerId);
+            await _roomGoingOnHub.Clients.Group($"{room.Guid}-spectator").SendAsync("PlayerWon", room.WinnerId);
         }
         await AlertRoomListHubUpdate();
         return Ok();
@@ -161,16 +166,30 @@ public class RoomController : ControllerBase
         await _roomListHub.Clients.All.SendAsync("RoomListUpdated");
     }
     
+    private async Task TellHubGroupPlacingTick(string roomGuid, int placingSeconds)
+    {
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("PlacingTimerTick", placingSeconds);
+        await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("PlacingTimerTick", placingSeconds);
+    }
+
+    private async Task TellHubGroupPlacingTimeout(string roomGuid)
+    {
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("PlacingTimerTimeout");
+        await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("PlacingTimerTimeout");
+    }
+
     private async Task TellHubGroupLapTick(string roomGuid, int lapSeconds)
     {
-        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("TimerTick", lapSeconds);
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("LapTimerTick", lapSeconds);
+        await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("LapTimerTick", lapSeconds);
     }
 
     private async Task TellHubGroupLapTimeout(string roomGuid, int lapCount)
     {
-        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("TimerTimeout", lapCount);
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("LapTimerTimeout", lapCount);
+        await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("LapTimerTimeout", lapCount);
     }
-
+    
     public record PlaceInRoomDto
     {
         public required ShipOffsetsDto[] ShipsOffsets { get; set; }
