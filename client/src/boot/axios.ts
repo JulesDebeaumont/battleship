@@ -38,17 +38,18 @@ export default defineBoot(() => {
       return response
     },
     async (error) => {
-    if (error.status === 401 || error.status === 403) {
-      const router = useRouter()
-      await router.push({ name: 'home' })
+      if (error.status === 401 || error.status === 403) {
+        const router = useRouter()
+        await router.push({ name: 'home' })
+        return error
+      }
+      Notify.create({
+        color: 'negative',
+        message: 'Une erreur est survenue',
+      })
       return error
-    }
-    Notify.create({
-      type: 'negative',
-      message: 'Une erreur est survenue',
-    })
-    return error
-  })
+    },
+  )
 })
 
 export { api }
