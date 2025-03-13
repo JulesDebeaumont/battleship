@@ -46,3 +46,32 @@ export const guardEnterApp: NavigationGuard = async (to, from, next) => {
     next({ name: 'home' })
   }
 }
+export const guardEnterFakeApp: NavigationGuard = async (to, from, next) => {
+  const userStore = useUserStore()
+  if (userStore.hasEnteredApp) {
+    next()
+    return
+  }
+  userStore.hasEnteredApp = true
+  userStore.getInitialPathRequested(to.fullPath)
+  if (!userStore.isConnected) {
+    userStore.trySetupTokenFromCookies()
+  }
+  const urlWithTicket = window.location.search.match(/ST.+/)
+  if (!userStore.isConnected && urlWithTicket !== null && (urlWithTicket?.length ?? 0 > 0)) {
+    const ticketFromCas = urlWithTicket[0]
+    await userStore.askServerToken(ticketFromCas)
+    next({ name: 'home' })
+  }
+  if (!userStore.isConnected) {
+    next({ name: 'fake-login' })
+    return
+  } else {
+    const cookieRoute = userStore.getCookieRouteValue
+    if (cookieRoute !== null && cookieRoute !== '/' && cookieRoute !== '/login') {
+      next(cookieRoute)
+      return
+    }
+    next({ name: 'home' })
+  }
+}

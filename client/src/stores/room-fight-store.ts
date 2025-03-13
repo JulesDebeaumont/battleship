@@ -43,6 +43,7 @@ export const useRoomFightStore = defineStore('room-fight', {
     hasBeenCanceled: <boolean>false,
     lap: <number>1,
     winnerId: <number | null>null,
+    playerWon: <boolean>false,
   }),
   getters: {
     isRoomPlaying(): boolean {
@@ -60,6 +61,7 @@ export const useRoomFightStore = defineStore('room-fight', {
     isCurrentUserTurn(): boolean {
       if (this.room === null) return false
       if (this.room.state !== ERoomState.playing) return false
+      if (this.playerWon) return false
       const lapOdd = this.lap % 2 === 0
       if (this.isCurrentUserPlayerOne) return !lapOdd
       return lapOdd
@@ -146,9 +148,9 @@ export const useRoomFightStore = defineStore('room-fight', {
           if (this.room === null || this.userStore.user === null || this.room.playerTwo === null)
             return
           if (playerId === this.userStore.user.id) return
-          this.roomUserSetup.firedOffsets.push({ xOffset, yOffset, hit })
-          this.lap++
-          this.roomLapTimer = 0
+            this.roomUserSetup.firedOffsets.push({ xOffset, yOffset, hit })
+            this.lap++
+            this.roomLapTimer = 0
         },
       )
       this.hub.connection.on('PlacingTimerTick', (timer: number) => {
@@ -172,6 +174,7 @@ export const useRoomFightStore = defineStore('room-fight', {
         this.lap = newLapCount
       })
       this.hub.connection.on('PlayerWon', (playerId: number) => {
+        this.playerWon = true
         setTimeout(() => {
           if (this.room === null) return
           this.winnerId = playerId

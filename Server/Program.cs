@@ -107,6 +107,7 @@ public class Program
   {
     public const string JwtPrivateKey = "JwtPrivateKey";
     public const string ConnectionString = "ConnectionString";
+    public const string Environment = "Environment";
   
     public static void EnsureSecretsAreDefined(IConfiguration configuration)
     {

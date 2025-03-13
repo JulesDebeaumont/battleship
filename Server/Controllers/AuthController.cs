@@ -9,11 +9,13 @@ namespace Server.Controllers
     {
         private readonly AuthService _authService;
         private readonly NoyauSihService _noyauService;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AuthService authService, NoyauSihService noyauService)
+        public AuthController(AuthService authService, NoyauSihService noyauService, IConfiguration configuration)
         {
             _authService = authService;
             _noyauService = noyauService;
+            _configuration = configuration;
         }
 
 
@@ -26,18 +28,20 @@ namespace Server.Controllers
             var jwt = _authService.GenerateUserJwt(authUser);
             return Ok(new { token = jwt });
         }
-
-        // Dev only
-        /*
+        
         [HttpPost("fake-login")]
         public async Task<ActionResult> FakeLogin(FakeLoginDtoIn dtoIn)
         {
-            var fakeUserFromFakeNoay = await _noyauService.GetFakeUserFromNoyauSih(dtoIn.IdRes);
+            var environment = _configuration[$"{Program.ConfigurationProgram.Environment}"];
+            if (environment != "Development")
+            {
+                return Unauthorized();
+            }
+            var fakeUserFromFakeNoay = _noyauService.GetFakeUserFromNoyauSih(dtoIn.IdRes);
             var authUser = await _authService.CreateOrUpdateUserFromNoyauSih(fakeUserFromFakeNoay);
             var jwt = _authService.GenerateUserJwt(authUser);
             return Ok(new { token = jwt });
         }
-        */
         
     }
 

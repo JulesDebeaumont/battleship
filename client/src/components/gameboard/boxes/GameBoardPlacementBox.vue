@@ -47,7 +47,7 @@ watch(
           put: true,
         }"
         item-key="guid"
-        class="full-width full-height"
+        class="full-width full-height draggable-ship"
         :sort="false"
       >
         <template #item="{ element }">

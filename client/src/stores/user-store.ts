@@ -1,7 +1,7 @@
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { Cookies } from 'quasar'
-import { loginAPI } from 'src/api/login.api'
+import { fakeLoginAPI, loginAPI } from 'src/api/login.api'
 
 interface IUser {
   id: number
@@ -62,10 +62,10 @@ export const useUserStore = defineStore('user', {
         console.error(error)
       }
     },
-    // async fakeAuth(idRes: string) {
-    //   const jwt = (await fakeLoginAPI(idRes)).token
-    //   this.authenticate(jwt);
-    // },
+    async fakeAuth(idRes: string) {
+      const jwt = (await fakeLoginAPI(idRes)).token
+      this.authenticate(jwt);
+    },
     authenticate(token: string) {
       this.token = token
       const parsedToken = jwtDecode<IParsedToken>(token)

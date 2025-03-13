@@ -47,7 +47,7 @@ public class NoyauSihService
     }
   }
   
-  public async Task<NoyauSihUser> GetFakeUserFromNoyauSih(string userIdRes)  {
+  public NoyauSihUser GetFakeUserFromNoyauSih(string userIdRes)  {
     if (userIdRes == "000001")
     {
       return new NoyauSihUser

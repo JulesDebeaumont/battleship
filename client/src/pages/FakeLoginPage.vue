@@ -11,7 +11,7 @@ function dangIt() {
   isLoading.value = true
   setTimeout(() => {
     $q.notify({
-      color: 'red',
+      color: 'amber-9',
       message: 'Une erreur est survenue',
     })
     isLoading.value = false

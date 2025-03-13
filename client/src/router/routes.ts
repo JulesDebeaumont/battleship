@@ -1,12 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { guardEnterApp, guardIsConnected, guardIsDisconnected } from './guards'
+import { guardEnterApp, guardEnterFakeApp, guardIsConnected, guardIsDisconnected } from './guards'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'fake-root',
-    beforeEnter: guardEnterApp,
-    redirect: { name: 'fake-login' },
+    beforeEnter: guardEnterFakeApp,
     children: [
       {
         path: '/login',

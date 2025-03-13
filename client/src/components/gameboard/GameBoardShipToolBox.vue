@@ -23,8 +23,9 @@ function cloneItem(item: IShipPlacement) {
               :list="[ship]"
               :group="{ name: 'toolbox', pull: 'clone', put: false }"
               :clone="cloneItem"
-              item-key="guid"
               :sort="false"
+              item-key="guid"
+              class="draggable-ship"
             >
               <template #item="{ element }">
                 <Ship :ship-placement="element" :toolbox="true" />
@@ -44,8 +45,9 @@ function cloneItem(item: IShipPlacement) {
               :list="[ship]"
               :group="{ name: 'toolbox', pull: 'clone', put: false }"
               :clone="cloneItem"
-              item-key="guid"
               :sort="false"
+              item-key="guid"
+              class="draggable-ship"
             >
               <template #item="{ element }">
                 <Ship :ship-placement="element" :toolbox="true" />
