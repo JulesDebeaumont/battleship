@@ -6,7 +6,7 @@ namespace Server.Services;
 
 public class RoomManager
 {
-    private const int MaxRoomCount = 20;
+    private const int MaxRoomCount = 50;
     private readonly Dictionary<string, RoomAvailable> _availableRooms = [];
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
@@ -68,15 +68,21 @@ public class RoomManager
         Func<string, int, Task> callbackPlacingTimerTick, 
         Func<string, Task> callbackPlacingTimerTimeout,
         Func<string, int, Task> callbackLapTimerTick, 
-        Func<string, int, Task> callbackLapTimerTimeout)
+        Func<string, int, Task> callbackLapTimerTimeout,
+        Func<string, long, Task> callbackForfeit)
     {
         var userManager = GetUserManager();
         var playerOne = await userManager.FindByIdAsync(playerOneId.ToString());
         
-        var mergedPlacingTimeTimeoutCallback = new Func<string, Task>(async (roomGuid) =>
+        var mergedPlacingTimeTimeoutCallback = new Func<RoomAvailable, Task>(async (room) =>
         {
-            _availableRooms.Remove(roomGuid);
-            await callbackPlacingTimerTimeout.Invoke(roomGuid);
+            await callbackPlacingTimerTimeout.Invoke(room.Guid);
+            await RoomArchivedAndSave(room);
+        });
+        var mergedForfeitCallback = new Func<RoomAvailable, long, Task>(async (room, winnerId) =>
+        {
+            await callbackForfeit.Invoke(room.Guid, winnerId);
+            await RoomWinAndSave(room, winnerId);
         });
         var room = new RoomAvailable
         {
@@ -87,7 +93,8 @@ public class RoomManager
             CallbackPlacingTimerTick = callbackPlacingTimerTick,
             CallbackPlacingTimerTimeout = mergedPlacingTimeTimeoutCallback,
             CallbackLapTimerTick = callbackLapTimerTick,
-            CallbackLapTimerTimeout = callbackLapTimerTimeout
+            CallbackLapTimerTimeout = callbackLapTimerTimeout,
+            CallbackForfeit = mergedForfeitCallback
         };
         _availableRooms.Add(room.Guid, room);
         return room;
@@ -115,8 +122,7 @@ public class RoomManager
             }
             else
             {
-                room.Archived();
-                _availableRooms.Remove(room.Guid);
+                await RoomArchivedAndSave(room);
             }
         }
         if (room.PlayerTwoId == userId)
@@ -194,6 +200,7 @@ public class RoomManager
         }
         if (room.BothPlayerReady)
         {
+            room.StopPlacingTimer();
             room.State = ERoomState.Playing;
             room.StartLapTimer();
         }
@@ -204,7 +211,7 @@ public class RoomManager
         var room = GetRoom(roomGuid);
         if (room == null) return false;
         if (room.State != ERoomState.Playing) return false;
-        if (room.LapCount % 2 == 0)
+        if (room.IsPlayerTwoTurn())
         {
             return playerId == room.PlayerTwoId;
         }
@@ -261,6 +268,21 @@ public class RoomManager
         await userManager.UpdateAsync(playerTwo);
     }
 
+    private async Task RoomArchivedAndSave(RoomAvailable room)
+    {
+        room.Archived();
+        _availableRooms.Remove(room.Guid);
+        var roomRepo = GetRoomRepository();
+        await roomRepo.CreateRoom(room);
+        var userManager = GetUserManager();
+        var playerOne = await userManager.FindByIdAsync(room.PlayerOneId.ToString());
+        playerOne!.RegisterGameState(room);
+        await userManager.UpdateAsync(playerOne);
+        var playerTwo = await userManager.FindByIdAsync(room.PlayerTwoId.ToString()!);
+        playerTwo!.RegisterGameState(room);
+        await userManager.UpdateAsync(playerTwo);
+    }
+
     private RoomRepository GetRoomRepository()
     {
         return _serviceScopeFactory.CreateScope().ServiceProvider.GetService<RoomRepository>()!;
@@ -297,11 +319,15 @@ public class RoomAvailable
     private System.Timers.Timer LapTimer { get; } = new(1000);
     private System.Timers.Timer PlacingTimer { get; } = new(1000);
     public required Func<string, int, Task> CallbackPlacingTimerTick { get; set; }
-    public required Func<string, Task> CallbackPlacingTimerTimeout { get; set; }
+    public required Func<RoomAvailable, Task> CallbackPlacingTimerTimeout { get; set; }
     public required Func<string, int, Task> CallbackLapTimerTick { get; set; }
     public required Func<string, int, Task> CallbackLapTimerTimeout { get; set; }
+    public required Func<RoomAvailable, long, Task> CallbackForfeit { get; set; }
     public int PlayerOneLapPlayedCount { get; set; }
     public int PlayerTwoLapPlayedCount { get; set; }
+    private const int WarningCountBeforeForfeit = 3;
+    private int PlayerOneWarningCount { get; set; }
+    private int PlayerTwoWarningCount { get; set; }
 
     public void StartPlacingTimer()
     {
@@ -316,9 +342,7 @@ public class RoomAvailable
         PlacingTimerProgress++;
         if (PlacingTimerProgress >= PlacementTimeoutSecond)
         {
-            Archived();
-            CallbackPlacingTimerTimeout.Invoke(Guid);
-            StopPlacingTimer();
+            CallbackPlacingTimerTimeout.Invoke(this);
         }
     }
 
@@ -343,6 +367,20 @@ public class RoomAvailable
         LapTimerProgress++;
         if (LapTimerProgress >= LapTimeoutSecond)
         {
+            if (IsPlayerTwoTurn())
+            {
+                PlayerTwoWarningCount++;
+            }
+            else
+            {
+                PlayerOneWarningCount++;
+            }
+            if (PlayerOneWarningCount == WarningCountBeforeForfeit || PlayerTwoWarningCount == WarningCountBeforeForfeit)
+            {
+                var winnerId = PlayerOneWarningCount == WarningCountBeforeForfeit ? PlayerTwoId!.Value : PlayerOneId;
+                CallbackForfeit.Invoke(this, winnerId);
+                return;
+            }
             LapCount++;
             CallbackLapTimerTimeout.Invoke(Guid, LapCount);
             LapTimerProgress = 0;
@@ -358,11 +396,17 @@ public class RoomAvailable
         LapTimerProgress = 0;
     }
 
+    public bool IsPlayerTwoTurn()
+    {
+        return LapCount % 2 == 0;
+    }
+
     public void Win(long playerId)
     {
         WinnerId = playerId;
         EndedAt = DateTime.UtcNow;
         State = ERoomState.Archived;
+        StopPlacingTimer();
         StopLapTimer();
     }
 
@@ -370,6 +414,7 @@ public class RoomAvailable
     {
         EndedAt = DateTime.UtcNow;
         State = ERoomState.Archived;
+        StopPlacingTimer();
         StopLapTimer();
     }
     

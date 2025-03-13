@@ -5,6 +5,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'fake-root',
+    beforeEnter: guardEnterApp,
     redirect: { name: 'fake-login' },
     children: [
       {

@@ -32,6 +32,7 @@ export const guardEnterApp: NavigationGuard = async (to, from, next) => {
   if (!userStore.isConnected && urlWithTicket !== null && (urlWithTicket?.length ?? 0 > 0)) {
     const ticketFromCas = urlWithTicket[0]
     await userStore.askServerToken(ticketFromCas)
+    next({ name: 'home' })
   }
   if (!userStore.isConnected) {
     next({ name: 'login' })

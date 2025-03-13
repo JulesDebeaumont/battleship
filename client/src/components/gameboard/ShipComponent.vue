@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { IShipPlacement } from 'src/stores/room-placement-store'
-import { BIG_SHIP_SIZE, MEDIUM_SHIP_SIZE, SMALL_SHIP_SIZE, SQUARE_SIZE, SQUARE_SIZE_UNIT } from 'src/utils/gameboard-boxes';
+import {
+  BIG_SHIP_SIZE,
+  MEDIUM_SHIP_SIZE,
+  SMALL_SHIP_SIZE,
+  SQUARE_SIZE,
+  SQUARE_SIZE_UNIT,
+} from 'src/utils/gameboard-boxes'
 import { computed } from 'vue'
 
 const propsComponents = withDefaults(
@@ -27,8 +33,10 @@ const stylesContainer = computed(() => {
   if (propsComponents.shipPlacement.type === 'big') size = BIG_SHIP_SIZE
   if (propsComponents.shipPlacement.type === 'medium') size = MEDIUM_SHIP_SIZE
   if (propsComponents.shipPlacement.type === 'small') size = SMALL_SHIP_SIZE
-  if (propsComponents.shipPlacement.orientation === 'horizontal') styles += ` width:${size}${SQUARE_SIZE_UNIT}; height: ${SQUARE_SIZE}${SQUARE_SIZE_UNIT};`
-  if (propsComponents.shipPlacement.orientation === 'vertical') styles += ` width:${SQUARE_SIZE}${SQUARE_SIZE_UNIT}; height: ${size}${SQUARE_SIZE_UNIT};`
+  if (propsComponents.shipPlacement.orientation === 'horizontal')
+    styles += ` width:${size}${SQUARE_SIZE_UNIT}; height: ${SQUARE_SIZE}${SQUARE_SIZE_UNIT};`
+  if (propsComponents.shipPlacement.orientation === 'vertical')
+    styles += ` width:${SQUARE_SIZE}${SQUARE_SIZE_UNIT}; height: ${size}${SQUARE_SIZE_UNIT};`
   return styles
 })
 const classesShip = computed(() => {
@@ -86,7 +94,7 @@ const stylesShip = computed(() => {
   position: absolute;
   top: 0;
   left: 100%;
-  transform:  rotate(90deg);
+  transform: rotate(90deg);
   transform-origin: top left;
 }
 

@@ -37,7 +37,14 @@ public class RoomController : ControllerBase
         {
             return BadRequest("Too much rooms already");
         }
-        var room = await _roomManager.CreateRoom(GetCurrentUserId(), TellHubGroupPlacingTick,  TellHubGroupPlacingTimeout, TellHubGroupLapTick, TellHubGroupLapTimeout);
+        var room = await _roomManager.CreateRoom(
+            GetCurrentUserId(), 
+            TellHubGroupPlacingTick, 
+            TellHubGroupPlacingTimeout, 
+            TellHubGroupLapTick, 
+            TellHubGroupLapTimeout,
+            TellHubGroupForfeit
+            );
         await AlertRoomListHubUpdate();
         return Ok(new { guid = room.Guid });
     }
@@ -148,14 +155,6 @@ public class RoomController : ControllerBase
         return Ok();
     }
     
-    [HttpPost]
-    [Route("{guid}/join-as-spectator")]
-    public async Task<ActionResult> JoinRoomAsSpectator(string guid)
-    {
-        // TODO
-        return Ok();
-    }
-
     private long GetCurrentUserId()
     {
         return long.Parse(User.Identity!.Name!);
@@ -188,6 +187,12 @@ public class RoomController : ControllerBase
     {
         await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("LapTimerTimeout", lapCount);
         await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("LapTimerTimeout", lapCount);
+    }
+
+    private async Task TellHubGroupForfeit(string roomGuid, long winnerId)
+    {
+        await _roomGoingOnHub.Clients.Group(roomGuid).SendAsync("PlayerWon", winnerId);
+        await _roomGoingOnHub.Clients.Group($"{roomGuid}-spectator").SendAsync("PlayerWon", winnerId);
     }
     
     public record PlaceInRoomDto

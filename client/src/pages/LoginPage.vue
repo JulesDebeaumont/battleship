@@ -8,8 +8,8 @@ const userStore = useUserStore()
 <template>
   <div class="flex column flex-center">
     <SpaceButton label="Connexion" @click="userStore.askCasTicket()" />
-    <SpaceButton label="Connexion0" @click="userStore.fakeAuth('000000')" />
+    <!-- <SpaceButton label="Connexion0" @click="userStore.fakeAuth('000000')" />
     <SpaceButton label="Connexion1" @click="userStore.fakeAuth('000001')" />
-    <SpaceButton label="Connexion2" @click="userStore.fakeAuth('000002')" />
+    <SpaceButton label="Connexion2" @click="userStore.fakeAuth('000002')" /> -->
   </div>
 </template>

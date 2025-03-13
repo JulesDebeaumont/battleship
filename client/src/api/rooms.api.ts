@@ -39,9 +39,6 @@ export async function leaveRoomAPI(roomGuid: string): Promise<void> {
 export async function joinRoomAsOpponentAPI(roomGuid: string): Promise<IRoomPlayerDto> {
   return (await api.post(`${roomsUrl}/${roomGuid}/join-as-opponent`)).data
 }
-export async function JoinRoomAsSpectatorAPI(roomGuid: string): Promise<IRoomSpectatorDto> {
-  return (await api.post(`${roomsUrl}/${roomGuid}/join-as-spectator`)).data
-}
 
 export interface IRoomFromListDto {
   guid: string
@@ -108,5 +105,5 @@ export enum EHitType {
   none = 0,
   hitNothing = 1,
   hitShip = 2,
-  hitShipAndDrawned = 3
+  hitShipAndDrawned = 3,
 }

@@ -12,6 +12,7 @@ import { useSignalR } from 'src/hooks/use-signalr'
 import { useUserStore } from './user-store'
 import { useShootingStarStore } from './shooting-star-store'
 import type { IShipPlacement } from './room-placement-store'
+import { convertShipToShipPlacement } from 'src/utils/misc'
 
 export const GRID_SIZE = 8 + 1
 
@@ -75,7 +76,7 @@ export const useRoomFightStore = defineStore('room-fight', {
     },
     getWinnerString(): string | null {
       if (this.room === null) return null
-      if (this.hasBeenCanceled) return 'Partie annulée.'
+      if (this.hasBeenCanceled) return 'Partie annulée'
       let pseudo: string | null = null
       if (this.winnerId === this.room.playerOne.id) pseudo = this.room.playerOne.pseudo
       if (this.winnerId === this.room.playerTwo?.id) pseudo = this.room.playerTwo.pseudo
@@ -156,6 +157,7 @@ export const useRoomFightStore = defineStore('room-fight', {
       this.hub.connection.on('PlacingTimerTimeout', () => {
         if (this.room === null) return
         this.room.state = ERoomState.archived
+        this.hasBeenCanceled = true
       })
       this.hub.connection.on('LapTimerTick', (timer: number) => {
         this.roomLapTimer = timer
@@ -187,10 +189,15 @@ export const useRoomFightStore = defineStore('room-fight', {
     },
     async setupRoom(roomGuid: string) {
       this.room = await getRoomAsOpponentByGuidAPI(roomGuid)
+      if (this.room.state === ERoomState.placing || this.room.state === ERoomState.playing) {
+        this.roomUserSetup.ships =
+          this.room.userSetup?.ships.map((ship) => {
+            return convertShipToShipPlacement(ship)
+          }) ?? []
+      }
       if (this.room.state === ERoomState.playing) {
-
-        // in case of refresh page during play
-        // TODO
+        this.roomUserSetup.firedOffsets = this.room.userFiredOffsets ?? []
+        this.roomOpponentSetup.firedOffsets = this.room.opponentFiredOffsets ?? []
       }
     },
     place(boatPlacements: IShipPlacement[]) {

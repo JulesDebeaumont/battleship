@@ -27,7 +27,8 @@ namespace Server.Controllers
             return Ok(new { token = jwt });
         }
 
-        // TODO dev only, no CAS
+        // Dev only
+        /*
         [HttpPost("fake-login")]
         public async Task<ActionResult> FakeLogin(FakeLoginDtoIn dtoIn)
         {
@@ -36,6 +37,7 @@ namespace Server.Controllers
             var jwt = _authService.GenerateUserJwt(authUser);
             return Ok(new { token = jwt });
         }
+        */
         
     }
 

@@ -1,7 +1,7 @@
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { Cookies } from 'quasar'
-import { fakeLoginAPI, loginAPI } from 'src/api/login.api'
+import { loginAPI } from 'src/api/login.api'
 
 interface IUser {
   id: number
@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', {
     },
     getCookieRouteValue(): string | null {
       return Cookies.get(COOKIE_ROUTE_ENTERING)
-    }
+    },
   },
   actions: {
     trySetupTokenFromCookies() {
@@ -56,22 +56,22 @@ export const useUserStore = defineStore('user', {
     },
     async askServerToken(casTicket: string) {
       try {
-        const token = (await loginAPI(casTicket)).token;
-        this.authenticate(token);
+        const token = (await loginAPI(casTicket)).token
+        this.authenticate(token)
       } catch (error) {
         console.error(error)
       }
     },
-    async fakeAuth(idRes: string) {
-      const jwt = (await fakeLoginAPI(idRes)).token
-      this.authenticate(jwt);
-    },
+    // async fakeAuth(idRes: string) {
+    //   const jwt = (await fakeLoginAPI(idRes)).token
+    //   this.authenticate(jwt);
+    // },
     authenticate(token: string) {
       this.token = token
       const parsedToken = jwtDecode<IParsedToken>(token)
       this.user = {
         id: parsedToken.id,
-        pseudo: parsedToken.pseudo
+        pseudo: parsedToken.pseudo,
       }
       this.tokenExpiration = parsedToken.exp
       Cookies.set(COOKIE_TOKEN, token, { sameSite: SAME_SITE, path: COOKIE_PATH })
@@ -80,6 +80,6 @@ export const useUserStore = defineStore('user', {
       this.$reset()
       Cookies.remove(COOKIE_TOKEN, { path: COOKIE_PATH })
       Cookies.remove(COOKIE_ROUTE_ENTERING, { path: COOKIE_PATH })
-    }
+    },
   },
 })

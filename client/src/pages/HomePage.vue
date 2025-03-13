@@ -14,7 +14,7 @@ async function goRoute(routeName: string) {
     <div class="flex column">
       <SpaceButton label="Batailles" @click="goRoute('search-room')" />
       <SpaceButton label="Classements" @click="goRoute('leaderboard')" />
-      <SpaceButton label="Options" @click="goRoute('me')" />
+      <SpaceButton label="Profil" @click="goRoute('me')" />
     </div>
   </div>
 </template>

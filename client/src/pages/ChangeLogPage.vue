@@ -38,7 +38,7 @@ const router = useRouter()
         </div>
       </div>
 
-      <span class="text-grey-7 text-body2"
+      <span class="text-grey text-body2"
         ><i>{{ log.note }}</i></span
       >
     </SpaceContainer>

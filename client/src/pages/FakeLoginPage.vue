@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useQuasar } from 'quasar'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
+const FAKE_APP_NAME = 'ExpedIIAS'
 const $q = useQuasar()
 
 const isLoading = ref(false)
@@ -16,6 +17,10 @@ function dangIt() {
     isLoading.value = false
   }, 2000)
 }
+
+onMounted(() => {
+  document.title = FAKE_APP_NAME
+})
 </script>
 
 <template>
@@ -24,7 +29,7 @@ function dangIt() {
       <q-toolbar class="GPL__toolbar" style="height: 64px">
         <q-toolbar-title class="row items-center no-wrap" shring>
           <img src="/images/chu-logo.png" class="chu-logo" />
-          <span class="q-ml-sm text-weight-bold">ExpedIIAS</span>
+          <span class="q-ml-sm text-weight-bold">{{ FAKE_APP_NAME }}</span>
         </q-toolbar-title>
         <q-space />
         <div class="q-gutter-sm row items-center no-wrap">
@@ -38,7 +43,9 @@ function dangIt() {
     </q-header>
     <q-page-container>
       <div class="flex column flex-center">
-        <h6>Vous devez être connecté pour accéder à <i>ExpedIIAS</i></h6>
+        <h6>
+          Vous devez être connecté pour accéder à <i>{{ FAKE_APP_NAME }}</i>
+        </h6>
         <q-btn label="Connexion" @click="dangIt" :loading="isLoading" color="green-9" />
       </div>
     </q-page-container>

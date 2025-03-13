@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import GameLogo from 'src/components/general/GameLogo.vue'
-import ShootingStars from 'src/components/layout/ShootingStars.vue';
+import ShootingStars from 'src/components/layout/ShootingStars.vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+
+onMounted(() => {
+  document.title = 'Space Battle Ship'
+})
 </script>
 
 <template>

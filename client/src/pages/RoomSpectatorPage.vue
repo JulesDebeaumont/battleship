@@ -16,13 +16,21 @@ const $q = useQuasar()
 const spectatorStore = useRoomSpectatorStore()
 const roomGuid = route.params.guid!.toString()
 
-const showDialogWinner = ref<boolean>(false)
+const showDialogEnd = ref<boolean>(false)
 
 watch(
   () => spectatorStore.winnerId,
   (newValue) => {
     if (newValue !== null) {
-      showDialogWinner.value = true
+      showDialogEnd.value = true
+    }
+  },
+)
+watch(
+  () => spectatorStore.hasBeenCanceled,
+  (newValue) => {
+    if (newValue) {
+      showDialogEnd.value = true
     }
   },
 )
@@ -60,7 +68,7 @@ onUnmounted(async () => {
 
 <template>
   <div class="flex column">
-    <q-dialog v-model="showDialogWinner" @hide="closeWinnerDialogAndExit" auto-close>
+    <q-dialog v-model="showDialogEnd" @hide="closeWinnerDialogAndExit" auto-close>
       <SpaceCard>
         <div class="flex flex-center">{{ spectatorStore.getWinnerString }}</div>
       </SpaceCard>
@@ -69,11 +77,16 @@ onUnmounted(async () => {
     <div v-if="spectatorStore.isRoomPlacing" class="flex column">
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
         <div class="flex column flex-center">
-          <WaitingButton :label="`Placements des vaisseaux : ${labelPlacingTimerButton}`" />
+          <WaitingButton :label="labelPlacingTimerButton" />
           <div v-if="spectatorStore.room" class="flex row flex-center">
-            <SpaceButton :label="spectatorStore.room?.playerOne.pseudo" :disabled="!spectatorStore.playerOneReady" />
-            <SpaceButton :label="spectatorStore.room?.playerTwo?.pseudo ?? '???'"
-              :disabled="!spectatorStore.playerTwoReady" />
+            <SpaceButton
+              :label="spectatorStore.room?.playerOne.pseudo"
+              :disabled="!spectatorStore.playerOneReady"
+            />
+            <SpaceButton
+              :label="spectatorStore.room?.playerTwo?.pseudo ?? '???'"
+              :disabled="!spectatorStore.playerTwoReady"
+            />
           </div>
         </div>
       </transition>
@@ -83,7 +96,7 @@ onUnmounted(async () => {
       <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
         <div class="flex column flex-center">
           <WaitingButton :label="labelLapTimerButton" />
-          <div class="flex row justify-around" style="width: 90vw;">
+          <div class="flex row justify-around" style="width: 90vw">
             <GameBoardSpectator :isPlayerOne="true" />
             <GameBoardSpectator :isPlayerOne="false" />
           </div>

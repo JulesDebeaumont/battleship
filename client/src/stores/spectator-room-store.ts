@@ -4,6 +4,7 @@ import type { IRoomSpectatorDto, EHitType } from 'src/api/rooms.api'
 import { ERoomState, getRoomAsSpectatorByGuidAPI } from 'src/api/rooms.api'
 import { useSignalR } from 'src/hooks/use-signalr'
 import type { IShipPlacement } from './room-placement-store'
+import { convertShipToShipPlacement } from 'src/utils/misc'
 
 export const useRoomSpectatorStore = defineStore('room-spectator', {
   state: () => ({
@@ -13,7 +14,7 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
     playerTwoReady: <boolean>false,
     roomPlacingTimer: <number>0,
     roomLapTimer: <number>0,
-    hasBeenCanceled: <boolean> false,
+    hasBeenCanceled: <boolean>false,
     lap: <number>1,
     winnerId: <number | null>null,
   }),
@@ -32,7 +33,7 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
     },
     getWinnerString(): string | null {
       if (this.room === null) return null
-      if (this.hasBeenCanceled) return 'La partie est annulée.'
+      if (this.hasBeenCanceled) return 'La partie est annulée'
       let pseudo: string | null = null
       if (this.winnerId === this.room.playerOne.id) pseudo = this.room.playerOne.pseudo
       if (this.winnerId === this.room.playerTwo?.id) pseudo = this.room.playerTwo.pseudo
@@ -65,11 +66,11 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
         (playerId: number, xOffset: number, yOffset: number, hit: EHitType) => {
           if (this.room === null || this.room.playerOne === null || this.room.playerTwo === null)
             return
-          console.log(playerId)
-          console.log(this.room)
           const roomSetup =
-            this.room.playerOne.id === playerId ? this.room.playerTwoSetup : this.room.playerOneSetup
-            if (!roomSetup) return
+            this.room.playerOne.id === playerId
+              ? this.room.playerTwoSetup
+              : this.room.playerOneSetup
+          if (!roomSetup) return
           roomSetup.firedOffsets.push({ xOffset, yOffset, hit })
           this.lap++
           this.roomLapTimer = 0
@@ -81,6 +82,7 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
       this.hub.connection.on('PlacingTimerTimeout', () => {
         if (this.room === null) return
         this.room.state = ERoomState.archived
+        this.hasBeenCanceled = true
       })
       this.hub.connection.on('LapTimerTick', (timer: number) => {
         this.roomLapTimer = timer
@@ -111,7 +113,12 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
       this.room = await getRoomAsSpectatorByGuidAPI(roomGuid)
     },
     getHit(playerOne: boolean, xOffset: number, yOffset: number): EHitType | null {
-      if (this.room === null || this.room.playerOneSetup === null || this.room.playerTwoSetup === null) return null
+      if (
+        this.room === null ||
+        this.room.playerOneSetup === null ||
+        this.room.playerTwoSetup === null
+      )
+        return null
       const roomSetup = playerOne ? this.room.playerOneSetup : this.room.playerTwoSetup
       return (
         roomSetup.firedOffsets.find((userShip) => {
@@ -120,25 +127,20 @@ export const useRoomSpectatorStore = defineStore('room-spectator', {
       )
     },
     getBoat(playerOne: boolean, xOffset: number, yOffset: number): IShipPlacement | null {
-      if (this.room === null || this.room.playerOneSetup === null || this.room.playerTwoSetup === null) return null
+      if (
+        this.room === null ||
+        this.room.playerOneSetup === null ||
+        this.room.playerTwoSetup === null
+      )
+        return null
       const roomSetup = playerOne ? this.room.playerOneSetup : this.room.playerTwoSetup
-      const ship = roomSetup.ships.find((userShip) => {
+      const ship =
+        roomSetup.ships.find((userShip) => {
           const userShipFirstOffset = userShip.positions.at(0)!
           return userShipFirstOffset.xOffset === xOffset && userShipFirstOffset.yOffset === yOffset
         }) ?? null
       if (!ship) return null
-      return {
-        guid: ship.guid,
-        type: ship.type,
-        enabled: true,
-        orientation: ship.orientation,
-        offsets: ship.positions.map((position) => {
-          return {
-            xOffset: position.xOffset,
-            yOffset: position.yOffset
-          }
-        })
-      }
+      return convertShipToShipPlacement(ship)
     },
   },
 })
