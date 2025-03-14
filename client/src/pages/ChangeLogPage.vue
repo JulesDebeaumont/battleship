@@ -2,10 +2,20 @@
 import HologramText from 'src/components/general/HologramText.vue'
 import SpaceButton from 'src/components/general/SpaceButton.vue'
 import SpaceContainer from 'src/components/general/SpaceContainer.vue'
+import type { ILogComponentInfo } from 'src/utils/changelog'
 import { allLogs } from 'src/utils/changelog'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+function getcoreTypeLabel(coreType: ILogComponentInfo['cores'][number]['type']): string {
+  const labels: Record<ILogComponentInfo['cores'][number]['type'], string> = {
+    changes: 'Changements',
+    fixes: 'Correctifs',
+    add: 'Ajouts',
+  }
+  return labels[coreType]
+}
 </script>
 
 <template>
@@ -25,7 +35,7 @@ const router = useRouter()
         <div v-for="core in log.cores" :key="core.type">
           <div>
             <span class="text-h6 text-weight-medium text-cyan-8"
-              >{{ core.type === 'changes' ? 'Changements' : 'Correctifs' }}
+              >{{ getcoreTypeLabel(core.type) }}
             </span>
           </div>
           <div class="q-pb-lg q-pt-sm no-margin">

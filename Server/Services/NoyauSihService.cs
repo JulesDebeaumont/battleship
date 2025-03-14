@@ -102,7 +102,6 @@ public class NoyauSihService
       public string nom { get; set; } = string.Empty;
       public string prenom { get; set; } = string.Empty;
       public required string id_res { get; set; }
-
     }
   }
 }
